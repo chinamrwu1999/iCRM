@@ -20,8 +20,10 @@ func main() {
 	router.StaticFile("/favicon.ico", "html/favicon.ico")
 	router.GET("/", index)
 	router.POST("/goal/add", saveGoal)
-	router.POST("/customer/new", CustomerAdd)
+	router.POST("/customer/add", CustomerAdd)
 	router.GET("/codes/:type", getCodes)
+	router.GET("/provinces", fetchProvines)
+	router.GET("/city/:code", fetchChildCitys)
 	router.Run(":3000")
 
 }

@@ -56,3 +56,15 @@ func getCodes(c *gin.Context) {
 	objs := fetchCodes(codeType)
 	c.JSON(http.StatusOK, objs)
 }
+
+func fetchProvines(c *gin.Context) {
+	objs := cityProvines()
+	fmt.Println(objs)
+	c.JSON(http.StatusOK, objs)
+}
+
+func fetchChildCitys(c *gin.Context) {
+	code := c.Param("code")
+	objs := cityChildren(code)
+	c.JSON(http.StatusOK, objs)
+}

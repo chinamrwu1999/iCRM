@@ -42,7 +42,7 @@ type Customer struct {
 	Status      string `gorm:"column:status"`
 	Level       string `gorm:"column:level"`
 	GetWay      string `gorm:"column:getway"`
-	Nation      string `gorm:"column:nation"`
+	Nation      string `gorm:"column:nation;default:'cn'"`
 	Province    string `gorm:"column:province"`
 	City        string `gorm:"column:city"`
 	Address     string `gorm:"column:address"`
@@ -50,9 +50,15 @@ type Customer struct {
 }
 
 type Code struct {
-	Label    string `gorm:"column:label"`
-	Code     string `gorm:"column:value"`
-	CodeType string `gorm:"column:codetype"`
+	Label        string `gorm:"column:label"`
+	Code         string `gorm:"column:value"`
+	CodeType     string `gorm:"column:codetype"`
 	DisplayOrder string `gorm:"column:displayOrder"`
-	Remark   string `gorm:"column:remark"`
+	Remark       string `gorm:"column:remark"`
+}
+
+type City struct {
+	Code string `gorm:"column:code"`
+	Name string `gorm:"column:name"`
+	//ParentId string `gorm:"column:parentId"`
 }

@@ -1,10 +1,5 @@
 create database iCRM;
 use iCRM;
-create table areas(
-    Code varchar(10) not null primary key,
-    Name varchar(80) not null,
-    ParentCode varchar(10) not null
-);
 
 create table businessAreas(
      ID TINYINT not null primary key,
@@ -33,12 +28,12 @@ create table Customers(
     ID int not null auto_increment primary key,
     FullName varchar(60) not  null,
     ShortName varchar(30),
-    CType char(1),
-    Scale char(1),
-    Status char(1),
-    Level char(1),
-    GetWay char(1),
-    Nation char(2),
+    CType char(20),
+    Scale char(20),
+    Status char(20),
+    Level char(20),
+    GetWay char(20),
+    Nation char(20) default 'cn',
     Province char(6),
     City Char(6),
     Address varchar(100),
@@ -68,4 +63,14 @@ create table Codes(
     displayOrder SMALLINT ,
     Remark varchar(30),
     primary key(Code,CodeType)
+);
+
+create table nations(
+    code varchar(20) not null primary key,
+    Name varchar(50) not null
+);
+create table citys(
+    Code varchar(10) not null primary key,
+    Name varchar(50) not null,
+    ParentId varchar(20)
 );
