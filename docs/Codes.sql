@@ -30,3 +30,10 @@ INSERT INTO Codes(label,code,codeType,displayOrder,Remark) values('女','F','gen
 ('中型','MED','scale',3,'规模'),
 ('小型','SMALL','scale',4,'规模'),
 ('微型','TINY','scale',5,'规模');
+
+INSERT INTO Codes(label,code,codeType,displayOrder,Remark) values
+('私营企业','PE','Comp',0,'企业性质'),
+('国有企业','NE','Comp',1,'企业性质'),
+('公立医院','NH','Comp',2,'企业性质'),
+('民营医院','PH','Comp',3,'企业性质'),
+('外资企业','FE','Comp',4,'企业性质');

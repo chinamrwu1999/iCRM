@@ -32,23 +32,7 @@ func saveGoal(c *gin.Context) {
 	fmt.Println(obj)
 }
 
-func CustomerAdd(c *gin.Context) {
-	var obj Customer
-	if err := c.BindJSON(&obj); err != nil {
-		fmt.Println("发生错误")
-		fmt.Println(obj)
-		c.String(http.StatusBadRequest, "错误:%v", err)
-		return
-	}
 
-	if err := db.Create(&obj).Error; err != nil {
-		fmt.Println("添加Goal到数据库失败：", err)
-		return
-	}
-
-	fmt.Println(obj)
-	c.JSON(http.StatusOK, obj)
-}
 
 func getCodes(c *gin.Context) {
 	codeType := c.Param("type")

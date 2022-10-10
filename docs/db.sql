@@ -37,7 +37,8 @@ create table Customers(
     Province char(6),
     City Char(6),
     Address varchar(100),
-    Description varchar(300)
+    Description varchar(300),
+    createTime datetime default now()
 );
 
 create table CustomerContacts(
