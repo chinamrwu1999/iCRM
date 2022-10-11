@@ -43,7 +43,6 @@ func getCodes(c *gin.Context) {
 
 func fetchProvines(c *gin.Context) {
 	objs := cityProvines()
-	fmt.Println(objs)
 	c.JSON(http.StatusOK, objs)
 }
 

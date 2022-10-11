@@ -20,8 +20,28 @@ func main() {
 	router.StaticFile("/favicon.ico", "html/favicon.ico")
 	router.GET("/", index)
 	router.POST("/goal/add", saveGoal)
-	router.POST("/customer/add", CustomerAdd)
-	router.GET("/customer/list", CustomerList)
+	//router.POST("/customer/add", CustomerAdd)
+	//router.GET("/customer/list", handlerCustomerList)
+	router.GET("/customer/:customerId", func(ctx *gin.Context) {
+		switch ctx.Param("customerId") {
+		case "list":
+			ListCustomers(ctx)
+		default:
+			fetchCustomer(ctx)
+		}
+	}) // handlerCustomer)
+    router.POST("/customer/:customerId", func(ctx *gin.Context) {
+		switch ctx.Param("customerId") {
+		case "add":
+			AddCustomer(ctx)
+		case "update":
+			UpdateCustomer(ctx)
+		}
+	}) // handlerCustomer)
+    
+
+
+
 
 	router.GET("/codes/:type", getCodes)
 	router.GET("/provinces", fetchProvines)
