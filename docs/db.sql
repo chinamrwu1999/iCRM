@@ -116,3 +116,11 @@ create table MarketPersons(
    startDate dateTime default now(), # 开始日期
    primary key(EmployeeId,Code)
 );
+
+create table Hospitals(
+    ID int auto_increment not null primary key,
+    Name varchar(60) not null,
+    Code varchar(10) not  null,
+    Grade varchar(10),
+    HType varchar(10)
+);
