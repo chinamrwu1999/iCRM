@@ -33,21 +33,6 @@ type Goal struct {
 	IsTeamGoal string
 }
 
-type Customer struct {
-	ID          uint   `gorm:"column:ID"`
-	FullName    string `gorm:"column:fullname"`
-	ShortName   string `gorm:"column:shortname"`
-	CType       string `gorm:"column:ctype"`
-	Scale       string `gorm:"column:scale"`
-	Status      string `gorm:"column:status"`
-	Level       string `gorm:"column:level"`
-	GetWay      string `gorm:"column:getway"`
-	Nation      string `gorm:"column:nation;default:'cn'"`
-	Province    string `gorm:"column:province"`
-	City        string `gorm:"column:city"`
-	Address     string `gorm:"column:address"`
-	Description string `gorm:"column:description"`
-}
 
 type Code struct {
 	Label        string `gorm:"column:label"`

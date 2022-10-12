@@ -8,6 +8,23 @@ import (
 	"github.com/gin-gonic/gin" //  go get -u github.com/gin-gonic/gin
 )
 
+
+type Customer struct {
+	ID          uint   `gorm:"column:ID"`
+	FullName    string `gorm:"column:fullname"`
+	ShortName   string `gorm:"column:shortname"`
+	CType       string `gorm:"column:ctype"`
+	Scale       string `gorm:"column:scale"`
+	Status      string `gorm:"column:status"`
+	Level       string `gorm:"column:level"`
+	GetWay      string `gorm:"column:getway"`
+	Nation      string `gorm:"column:nation;default:'cn'"`
+	Province    string `gorm:"column:province"`
+	City        string `gorm:"column:city"`
+	Address     string `gorm:"column:address"`
+	Description string `gorm:"column:description"`
+}
+
 func AddCustomer(c *gin.Context) {
 	var obj Customer
 	if err := c.BindJSON(&obj); err != nil {
@@ -52,8 +69,9 @@ func UpdateCustomer(c *gin.Context) {
 		c.String(http.StatusBadRequest, "错误:%v", err)
 		return
 	}
+	fmt.Println(obj)
 
-	if err := db.Save(&obj).Error; err != nil {
+	if err := db.Model(&obj).Updates(&obj).Error; err != nil {
 		fmt.Println("更新Customer到数据库失败：", err)
 		return
 	}
@@ -68,12 +86,32 @@ func ListCustomers(c *gin.Context) {
 	err := db.Raw(`SELECT A.ID, A.FullName,A.ShortName,A.Address,A.Description,C6.name as Province,C7.name as City,
 	C1.Label as CType,C2.label as Status,C3.label as Scale,C4.label as level,C5.label as GetWay  
 	FROM customers A
-	left join codes C1 on A.ctype  =  C1.code
-	left join codes C2 on A.status =  C2.code
-	left join codes C3 on A.scale  =  C3.code
-	left join codes C4 on A.level  =  C4.code
-	left join codes C5 on A.getway =  C5.code
-	left join citys C6 ON A.province= C6.code
+	left join codes C1 on A.ctype  =  C1.code AND C1.codeType='customerType'
+	left join codes C2 on A.status =  C2.code AND C2.codeType='customerStatus'
+	left join codes C3 on A.scale  =  C3.code AND C3.codeType='scale'
+	left join codes C4 on A.level  =  C4.code AND C4.codeType='customerGrade'
+	left join codes C5 on A.getway =  C5.code AND C5.codeType='customerWay'
+	left join citys C6 ON A.province= C6.code 
+	left join citys C7 ON A.city    = C7.code
+    order by ID `).Find(&objs).Error
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	c.JSON(http.StatusOK, objs)
+}
+
+func QueryCustomers(c *gin.Context) {
+	var objs []Customer
+	err := db.Raw(`SELECT A.ID, A.FullName,A.ShortName,A.Address,A.Description,C6.name as Province,C7.name as City,
+	C1.Label as CType,C2.label as Status,C3.label as Scale,C4.label as level,C5.label as GetWay  
+	FROM customers A
+	left join codes C1 on A.ctype  =  C1.code AND C1.codeType='customerType'
+	left join codes C2 on A.status =  C2.code AND C2.codeType='customerStatus'
+	left join codes C3 on A.scale  =  C3.code AND C3.codeType='scale'
+	left join codes C4 on A.level  =  C4.code AND C4.codeType='customerGrade'
+	left join codes C5 on A.getway =  C5.code AND C5.codeType='customerWay'
+	left join citys C6 ON A.province= C6.code 
 	left join citys C7 ON A.city    = C7.code
     order by ID `).Find(&objs).Error
 	if err != nil {
