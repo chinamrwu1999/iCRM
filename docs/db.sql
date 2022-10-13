@@ -1,21 +1,11 @@
 create database iCRM;
 use iCRM;
 
-create table businessAreas(
-     ID TINYINT not null primary key,
-     Name varchar(20) not null
-);
-
-create table businessAreaProvinces(
-    AreaId TINYINT not null,
-    AreaCode varchar(10) not null
-);
-
-create table Departments(
+create table department(
    DeptId TINYINT not null,
    Name varchar(30)
 );
-create table Employees(
+create table employee(
    ID char(8) not null primary key,
    Name varchar(30) not null,
    Role varchar(8) ,
@@ -23,7 +13,7 @@ create table Employees(
 );
 
 ;
-create table Customers(
+create table customer(
     ID int not null auto_increment primary key,
     FullName varchar(60) not  null,
     ShortName varchar(30),
@@ -37,18 +27,18 @@ create table Customers(
     City Char(6),
     Address varchar(100),
     Description varchar(300),
-    createTime datetime default now()
+    CreateTime datetime default now()
 );
 
-create table CustomerContacts(
+create table customerContact(
     CustomerId int not null,
     Name varchar(30) not null,
     Email varchar(50),
     Phone varchar(20),
-    updateTime datetime not null default now(),
+    UpdateTime datetime not null default now(),
     primary key(CustomerId,Phone)
 );
-Create table CustomerBanks(
+Create table customerBank(
     CustomerId int not null primary key,
     BankName varchar(200),
     BankAccount varchar(60),
@@ -56,40 +46,40 @@ Create table CustomerBanks(
     TaxID varchar(60)
 );
 
-create table Codes(
+create table code(
     Label varchar(100) not null,
     Code varchar(100) not null,
     CodeType varchar(30) not null,
-    displayOrder SMALLINT ,
+    DisplayOrder SMALLINT ,
     Remark varchar(30),
     primary key(Code,CodeType)
 );
 
-create table nations(
+create table nation(
     code varchar(20) not null primary key,
     Name varchar(50) not null
 );
-create table citys(
+create table city(
     Code varchar(10) not null primary key,
     Name varchar(50) not null,
     ParentId varchar(20)
 );
 
-create table MarketNames(    # 市场大区名：东大区、南大区、北大区等
+create table marketArea(    # 市场大区名：东大区、南大区、北大区等
     AreaId SMALLINT not null primary key,
     Name varchar(30) not null
 );
 
-delete from MarketNames;
-INSERT INTO MarketNames VALUES(0,'东大区'),(1,'南大区'),(2,'北大区'),(3,'国际');
+delete from marketArea;
+INSERT INTO marketArea VALUES(0,'东大区'),(1,'南大区'),(2,'北大区'),(3,'国际');
 
-create table MarketProvinces ( # 各个市场大区包含的省市
+create table marketProvince ( # 各个市场大区包含的省市
    AreaId int not null,
    Code varchar(10) not null,
    primary key(AreaId,Code)
 );
 
-INSERT INTO MarketProvinces VALUES
+INSERT INTO marketProvince VALUES
 (0,'110000'),(0,'310000'),(0,'320000'),(0,'320100'),(0,'320800'),
 (0,'321000'),(0,'321100'),(0,'321200'),(0,'321300'),(0,'330000'),
 (0,'340000'),(0,'370000'),(0,'410000'),(0,'420000'),(2,'120000'),
@@ -102,14 +92,14 @@ INSERT INTO MarketProvinces VALUES
 
 
 
-create table PositionNames(
+create table positionNames(
    Code varchar(5) not null primary key,
    Name varchar(20) not null
 );
 delete from PositionNames;
 INSERT INTO PositionNames values('SS','大区总监'),('PM','省区经理'),('MM','招商推广经理'),('SM','销售主管');
 
-create table MarketPersons(
+create table parketPersons(
    EmployeeId varchar(10) not null, # 员工号
    Code varchar(10) not null, # 行政区号
    Status TINYINT(1), # 状态：0离职,0 在职
@@ -117,9 +107,9 @@ create table MarketPersons(
    primary key(EmployeeId,Code)
 );
 
-create table Hospitals(
+create table hospital(
     ID int auto_increment not null primary key,
-    Name varchar(60) not null,
+    Name varchar(100) not null,
     Code varchar(10) not  null,
     Grade varchar(10),
     HType varchar(10)

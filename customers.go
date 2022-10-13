@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin" //  go get -u github.com/gin-gonic/gin
 )
 
-
 type Customer struct {
 	ID          uint   `gorm:"column:ID"`
 	FullName    string `gorm:"column:fullname"`
@@ -85,14 +84,14 @@ func ListCustomers(c *gin.Context) {
 	var objs []Customer
 	err := db.Raw(`SELECT A.ID, A.FullName,A.ShortName,A.Address,A.Description,C6.name as Province,C7.name as City,
 	C1.Label as CType,C2.label as Status,C3.label as Scale,C4.label as level,C5.label as GetWay  
-	FROM customers A
-	left join codes C1 on A.ctype  =  C1.code AND C1.codeType='customerType'
-	left join codes C2 on A.status =  C2.code AND C2.codeType='customerStatus'
-	left join codes C3 on A.scale  =  C3.code AND C3.codeType='scale'
-	left join codes C4 on A.level  =  C4.code AND C4.codeType='customerGrade'
-	left join codes C5 on A.getway =  C5.code AND C5.codeType='customerWay'
-	left join citys C6 ON A.province= C6.code 
-	left join citys C7 ON A.city    = C7.code
+	FROM customer A
+	left join code C1 on A.ctype  =  C1.code AND C1.codeType='customerType'
+	left join code C2 on A.status =  C2.code AND C2.codeType='customerStatus'
+	left join code C3 on A.scale  =  C3.code AND C3.codeType='scale'
+	left join code C4 on A.level  =  C4.code AND C4.codeType='customerGrade'
+	left join code C5 on A.getway =  C5.code AND C5.codeType='customerWay'
+	left join city C6 ON A.province= C6.code 
+	left join city C7 ON A.city    = C7.code
     order by ID `).Find(&objs).Error
 	if err != nil {
 		fmt.Println(err)
@@ -106,13 +105,13 @@ func QueryCustomers(c *gin.Context) {
 	err := db.Raw(`SELECT A.ID, A.FullName,A.ShortName,A.Address,A.Description,C6.name as Province,C7.name as City,
 	C1.Label as CType,C2.label as Status,C3.label as Scale,C4.label as level,C5.label as GetWay  
 	FROM customers A
-	left join codes C1 on A.ctype  =  C1.code AND C1.codeType='customerType'
-	left join codes C2 on A.status =  C2.code AND C2.codeType='customerStatus'
-	left join codes C3 on A.scale  =  C3.code AND C3.codeType='scale'
-	left join codes C4 on A.level  =  C4.code AND C4.codeType='customerGrade'
-	left join codes C5 on A.getway =  C5.code AND C5.codeType='customerWay'
-	left join citys C6 ON A.province= C6.code 
-	left join citys C7 ON A.city    = C7.code
+	left join code C1 on A.ctype  =  C1.code AND C1.codeType='customerType'
+	left join code C2 on A.status =  C2.code AND C2.codeType='customerStatus'
+	left join code C3 on A.scale  =  C3.code AND C3.codeType='scale'
+	left join code C4 on A.level  =  C4.code AND C4.codeType='customerGrade'
+	left join code C5 on A.getway =  C5.code AND C5.codeType='customerWay'
+	left join city C6 ON A.province= C6.code 
+	left join city C7 ON A.city    = C7.code
     order by ID `).Find(&objs).Error
 	if err != nil {
 		fmt.Println(err)

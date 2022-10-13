@@ -14,7 +14,7 @@ func fetchCodes(codeType string) []Code {
 
 func cityProvines() []City {
 	var objs []City
-	err := db.Raw("select code,name FROM citys where parentid is null order by code").Find(&objs).Error
+	err := db.Raw("select code,name FROM city where parentid is null order by code").Find(&objs).Error
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -23,7 +23,7 @@ func cityProvines() []City {
 
 func cityChildren(code string) []City {
 	var objs []City
-	err := db.Raw("select code,name FROM citys where parentid = ? order by code", code).Find(&objs).Error
+	err := db.Raw("select code,name FROM city where parentid = ? order by code", code).Find(&objs).Error
 	if err != nil {
 		fmt.Println(err)
 	}

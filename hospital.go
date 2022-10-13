@@ -77,11 +77,11 @@ func ListHospitals(c *gin.Context) {
 
 	err := db.Raw(`SELECT A.ID, A.Name,C6.name as Province,C7.name as City,
 	C1.Label as HType,C4.label as Grade
-	FROM Hospitals A
-	left join codes C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
-	left join codes C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
-	left join citys C6 ON A.Code   =  C6.code
-	left join citys C7 ON C7.code  =  C6.parentId
+	FROM Hospital A
+	left join code C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
+	left join code C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
+	left join city C6 ON A.Code   =  C6.code
+	left join city C7 ON C7.code  =  C6.parentId
     order by ID `).Find(&results).Error
 	if err != nil {
 		fmt.Println(err)
@@ -96,7 +96,7 @@ func QueryHospitals(c *gin.Context) {
 	err := db.Raw(`
 	SELECT A.ID, A.Name,C6.name as Province,C7.name as City,
 	C1.Label as HType,C4.label as Grade
-	FROM Hospitals A
+	FROM Hospital A
 	left join codes C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
 	left join codes C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
 	left join citys C6 ON A.Code   =  C6.code

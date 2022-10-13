@@ -2,10 +2,12 @@ package main
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 var dsn = "root:helloboy@tcp(localhost:3306)/icrm?charset=utf8mb4&parseTime=True&loc=Local"
@@ -13,7 +15,14 @@ var db *gorm.DB
 var err error
 
 func main() {
-	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true,                              // use singular table name, table for `User` would be `user` with this option enabled
+			NoLowerCase:   true,                              // skip the snake_casing of names
+			NameReplacer:  strings.NewReplacer("CID", "Cid"), // use name replacer to change struct/field name before convert it to db name
+
+		}})
 	router := gin.Default()
 	router.LoadHTMLGlob("html/*.html")
 	router.StaticFS("/assets", http.Dir("html/assets"))
@@ -59,6 +68,11 @@ func main() {
 			UpdateHospital(ctx)
 		}
 	}) // handlerCustomer)
+
+	router.GET("/market/areas", ListAreas)
+	router.GET("/market/provinces/:areaId", ListMarketProvinces)
+	router.GET("/market/citys/:provinceId", ListMarketCitys)
+
 	router.Run(":3000")
 
 }
