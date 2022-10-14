@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,49 @@ import (
 var dsn = "root:helloboy@tcp(localhost:3306)/icrm?charset=utf8mb4&parseTime=True&loc=Local"
 var db *gorm.DB
 var err error
+
+/*
+func Paginate(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
+	// 分页功能实现
+	return func(db *gorm.DB) *gorm.DB {
+		page, _ := strconv.Atoi(ctx.Query("page"))
+		if page == 0 {
+			page = 1
+		}
+		size, _ := strconv.Atoi(ctx.Query("size"))
+		fmt.Println(size)
+		switch{
+		case size > 100:
+			size = 100
+		case size < 1:
+			size = 50
+		}
+		offset := (page - 1) * size
+		return db.Offset(offset).Limit(size)
+	}
+}
+*/
+
+func PaginationInf(ctx *gin.Context) (int, int, int, string) {
+	page, _ := strconv.Atoi(ctx.Query("page"))
+	size, _ := strconv.Atoi(ctx.Query("size"))
+	count, _ := strconv.Atoi(ctx.Query("count"))
+	sort := ctx.Query("sort")
+	if page == 0 {
+		page = 1
+	}
+	switch {
+	case size > 100:
+		size = 100
+	case size < 1:
+		size = 50
+	}
+	if sort == "" {
+		sort = "ID"
+	}
+	offset := (page - 1) * size
+	return size, offset, count, sort
+}
 
 func main() {
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
@@ -62,6 +106,8 @@ func main() {
 	}) // handlerCustomer)
 	router.POST("/hospital/:hospitalId", func(ctx *gin.Context) {
 		switch ctx.Param("hospitalId") {
+		case "query":
+			QueryHospitals(ctx)
 		case "add":
 			AddHospital(ctx)
 		case "update":

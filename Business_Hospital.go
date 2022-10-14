@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -9,11 +10,11 @@ import (
 )
 
 type Hospital struct {
-	ID       uint   `gorm:"column:ID"`
-	Name     string `gorm:"column:name"`
-	Code     string `gorm:"column:Code"`
-	Grade    string `gorm:"column:Grade"`
-	HType    string `gorm:"column:htype"`
+	ID    uint   `gorm:"column:ID"`
+	Name  string `gorm:"column:name"`
+	Code  string `gorm:"column:Code"`
+	Grade string `gorm:"column:Grade"`
+	HType string `gorm:"column:htype"`
 }
 
 func AddHospital(c *gin.Context) {
@@ -74,35 +75,60 @@ func UpdateHospital(c *gin.Context) {
 /***************  客户列表  ***********************/
 func ListHospitals(c *gin.Context) {
 	var results []map[string]interface{}
+	var pagination Pagination
+	var ct int64
+	var hospital Hospital
+	size, offset, count, sort := PaginationInf(c)
+	pagination.PageSize = size
+	if count == 0 {
+		db.Model(&hospital).Count(&ct)
+		pagination.TotalRows = ct
+		pagination.TotalPages = int(math.Ceil(float64(ct) / float64(pagination.PageSize)))
+	}
 
-	err := db.Raw(`SELECT A.ID, A.Name,C6.name as Province,C7.name as City,
+	err := db.Raw(`SELECT A.ID, A.Name,C6.name as City,C7.name as Province,
+	C1.Label as HType,C4.label as Grade
+	FROM Hospital A
+	left join code C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
+	left join code C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
+	left join city C6 ON A.Code   =  C6.code
+	left join city C7 ON C7.code  =  C6.parentId order by ? limit ?,?
+   `, sort, offset, size).Find(&results).Error
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	pagination.Rows = results
+	c.JSON(http.StatusOK, pagination)
+
+}
+
+func QueryHospitals(c *gin.Context) {
+	var objs []map[string]interface{}
+
+	var pagination Pagination
+	var ct int64
+	var hospital Hospital
+	size, offset, count, sort := PaginationInf(c)
+
+	if count == 1 {
+		db.Model(&hospital).Count(&ct)
+		pagination.TotalRows = ct
+		pagination.TotalPages = int(math.Ceil(float64(ct) / float64(pagination.PageSize)))
+	}
+
+	err := db.Raw(`SELECT A.ID, A.Name,C6.name as City,C7.name as Province,
 	C1.Label as HType,C4.label as Grade
 	FROM Hospital A
 	left join code C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
 	left join code C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
 	left join city C6 ON A.Code   =  C6.code
 	left join city C7 ON C7.code  =  C6.parentId
-    order by ID `).Find(&results).Error
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	c.JSON(http.StatusOK, results)
-
-}
-
-func QueryHospitals(c *gin.Context) {
-	var objs []map[string]interface{}
-	err := db.Raw(`
-	SELECT A.ID, A.Name,C6.name as Province,C7.name as City,
-	C1.Label as HType,C4.label as Grade
-	FROM Hospital A
-	left join codes C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
-	left join codes C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
-	left join citys C6 ON A.Code   =  C6.code
-	left join citys C7 ON C7.code  =  C6.parentId
-    order by ID
-	`).Find(&objs).Error
+	WHERE A.code IN ( WITH RECURSIVE CTE1 as
+	(  select code from city where code IN (?)   UNION ALL
+		select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
+	) SELECT * FROM CTE1)
+  order by ? limit ?,? ;`, sort, offset, size).Find(&objs).Error
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -3628,3 +3628,8 @@ INSERT INTO city VALUES
 ('820103','路凼城','820100'),
 ('820104','路环','820100');
  update city set parentId='110000' where code like '110%' and parentId is not null;
+ update city set parentId='120000' where code like '1201%' and parentId is not null;
+ update city set parentId='310000' where code like '310%' and parentId is not null;
+ update city set parentId='500000' where code like '5000%' and parentId is not null;
+ update city set parentId='810000' where code like '8100%' and parentId is not null;
+ update city set parentId='820000' where code like '8200%' and parentId is not null;
