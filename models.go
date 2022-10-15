@@ -33,7 +33,6 @@ type Goal struct {
 	IsTeamGoal string
 }
 
-
 type Code struct {
 	Label        string `gorm:"column:label"`
 	Code         string `gorm:"column:value"`
@@ -46,4 +45,9 @@ type City struct {
 	Code string `gorm:"column:code"`
 	Name string `gorm:"column:name"`
 	//ParentId string `gorm:"column:parentId"`
+}
+
+type PostParameters struct {
+	Codes string
+	Txt   string
 }

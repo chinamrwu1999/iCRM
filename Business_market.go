@@ -44,7 +44,7 @@ func ListMarketProvinces(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err)
 	}
 
-	err = db.Raw(`SELECT A.*,B.name FROM MarketProvince A LEFT JOIN city B ON A.Code=B.Code WHERE A.areaId=?`, areaId).Find(&results).Error
+	err = db.Raw(`SELECT A.*,B.Name FROM MarketProvince A LEFT JOIN city B ON A.Code=B.Code WHERE A.areaId=?`, areaId).Find(&results).Error
 	if err != nil {
 		fmt.Println(err)
 		return

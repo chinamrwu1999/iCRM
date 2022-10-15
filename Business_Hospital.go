@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin" //  go get -u github.com/gin-gonic/gin
 )
@@ -105,14 +106,23 @@ func ListHospitals(c *gin.Context) {
 
 func QueryHospitals(c *gin.Context) {
 	var objs []map[string]interface{}
+	var paras map[string]interface{}
 
+	if err := c.BindJSON(&paras); err != nil {
+		fmt.Println("发生错误")
+		c.String(http.StatusBadRequest, "错误:%v", err)
+		return
+	}
+	citys := strings.Split(paras["Citys"].(string), ",") // c.PostFormArray("Citys")
 	var pagination Pagination
 	var ct int64
-	var hospital Hospital
 	size, offset, count, sort := PaginationInf(c)
-
-	if count == 1 {
-		db.Model(&hospital).Count(&ct)
+	pagination.PageSize = size
+	if count == 0 {
+		db.Raw(`SELECT count(*) FROM hospital where code IN ( WITH RECURSIVE CTE1 as
+			(  select code from city where code IN ?   UNION ALL
+				select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
+			) SELECT * FROM CTE1) `, citys).Count(&ct)
 		pagination.TotalRows = ct
 		pagination.TotalPages = int(math.Ceil(float64(ct) / float64(pagination.PageSize)))
 	}
@@ -125,13 +135,31 @@ func QueryHospitals(c *gin.Context) {
 	left join city C6 ON A.Code   =  C6.code
 	left join city C7 ON C7.code  =  C6.parentId
 	WHERE A.code IN ( WITH RECURSIVE CTE1 as
-	(  select code from city where code IN (?)   UNION ALL
+	(  select code from city where code IN ?   UNION ALL
 		select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
 	) SELECT * FROM CTE1)
-  order by ? limit ?,? ;`, sort, offset, size).Find(&objs).Error
+  order by ? limit ?,? ;`, citys, sort, offset, size).Find(&objs).Error
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	c.JSON(http.StatusOK, objs)
+	pagination.Rows = objs
+	c.JSON(http.StatusOK, pagination)
+}
+
+func ListCityHospitals(c *gin.Context) {
+	var results []map[string]interface{}
+	code := c.Param("city")
+
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, err)
+	}
+
+	err = db.Raw(`SELECT * FROM hospital A WHERE code =?`, code).Find(&results).Error
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	c.JSON(http.StatusOK, results)
 }

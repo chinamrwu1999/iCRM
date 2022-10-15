@@ -1,4 +1,4 @@
-INSERT INTO tb2 VALUES
+INSERT INTO tb1(name,province,city1,grade,htype) VALUES
 ('安平县中医医院','河北','衡水','二级',NULL),
 ('沧州中心医院','河北','沧州','三级','公立'),
 ('抚宁区中医院','河北','秦皇岛','二级',NULL),

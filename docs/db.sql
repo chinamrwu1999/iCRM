@@ -92,14 +92,14 @@ INSERT INTO marketProvince VALUES
 
 
 
-create table positionNames(
+create table positionName(
    Code varchar(5) not null primary key,
    Name varchar(20) not null
 );
-delete from PositionNames;
-INSERT INTO PositionNames values('SS','大区总监'),('PM','省区经理'),('MM','招商推广经理'),('SM','销售主管');
+delete from PositionName;
+INSERT INTO PositionName values('SS','大区总监'),('PM','省区经理'),('MM','招商推广经理'),('SM','销售主管');
 
-create table parketPersons(
+create table parketPerson(
    EmployeeId varchar(10) not null, # 员工号
    Code varchar(10) not null, # 行政区号
    Status TINYINT(1), # 状态：0离职,0 在职
