@@ -73,93 +73,64 @@ func UpdateHospital(c *gin.Context) {
 	c.JSON(http.StatusOK, obj)
 }
 
-/***************  客户列表  ***********************/
-func ListHospitals(c *gin.Context) {
-	var results []map[string]interface{}
-	var pagination Pagination
-	var ct int64
-	var hospital Hospital
-	size, offset, count, sort := PaginationInf(c)
-	pagination.PageSize = size
-	if count == 0 {
-		db.Model(&hospital).Count(&ct)
-		pagination.TotalRows = ct
-		pagination.TotalPages = int(math.Ceil(float64(ct) / float64(pagination.PageSize)))
-	}
-
-	err := db.Raw(`SELECT A.ID, A.Name,C6.name as City,C7.name as Province,
-	C1.Label as HType,C4.label as Grade
-	FROM Hospital A
-	left join code C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
-	left join code C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
-	left join city C6 ON A.Code   =  C6.code
-	left join city C7 ON C7.code  =  C6.parentId order by ? limit ?,?
-   `, sort, offset, size).Find(&results).Error
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	pagination.Rows = results
-	c.JSON(http.StatusOK, pagination)
-
-}
-
 func QueryHospitals(c *gin.Context) {
 	var objs []map[string]interface{}
-	var paras map[string]interface{}
+	var paras map[string]string
 
 	if err := c.BindJSON(&paras); err != nil {
 		fmt.Println("发生错误")
 		c.String(http.StatusBadRequest, "错误:%v", err)
 		return
 	}
-	citys := strings.Split(paras["Citys"].(string), ",") // c.PostFormArray("Citys")
-	var pagination Pagination
-	var ct int64
-	size, offset, count, sort := PaginationInf(c)
-	pagination.PageSize = size
-	if count == 0 {
-		db.Raw(`SELECT count(*) FROM hospital where code IN ( WITH RECURSIVE CTE1 as
-			(  select code from city where code IN ?   UNION ALL
-				select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
-			) SELECT * FROM CTE1) `, citys).Count(&ct)
-		pagination.TotalRows = ct
-		pagination.TotalPages = int(math.Ceil(float64(ct) / float64(pagination.PageSize)))
-	}
+	citys := paras["Citys"]
+	name := paras["Txt"]
 
-	err := db.Raw(`SELECT A.ID, A.Name,C6.name as City,C7.name as Province,
+	var sql = `SELECT A.ID, A.Name,C6.name as City,C7.name as Province,
 	C1.Label as HType,C4.label as Grade
 	FROM Hospital A
 	left join code C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
 	left join code C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
 	left join city C6 ON A.Code   =  C6.code
-	left join city C7 ON C7.code  =  C6.parentId
-	WHERE A.code IN ( WITH RECURSIVE CTE1 as
-	(  select code from city where code IN ?   UNION ALL
-		select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
-	) SELECT * FROM CTE1)
-  order by ? limit ?,? ;`, citys, sort, offset, size).Find(&objs).Error
-	if err != nil {
-		fmt.Println(err)
-		return
+	left join city C7 ON C7.code  =  C6.parentId `
+	var pagination Pagination
+	var ct int64
+	size, offset, count, sort := PaginationInf(c)
+	pagination.PageSize = size
+	pagination.StartIndex = offset + size
+	var err error
+	if name != "" { // 模糊查询
+		sql += "WHERE A.name like ? ORDER BY ? limit ?,?"
+		err = db.Raw(sql, "%"+name+"%", sort, offset, size).Find(&objs).Error
+	} else if citys != "" { //根据区域查询
+		var arr = strings.Split(citys, ",")
+		sql += "WHERE A.code in ? ORDER BY ? limit ?,?"
+		err = db.Raw(sql, arr, sort, offset, size).Find(&objs).Error
+	} else { //列出所有
+		sql += "ORDER BY ? limit ?,?"
+		err = db.Raw(sql, sort, offset, size).Find(&objs).Error
 	}
 	pagination.Rows = objs
-	c.JSON(http.StatusOK, pagination)
-}
 
-func ListCityHospitals(c *gin.Context) {
-	var results []map[string]interface{}
-	code := c.Param("city")
-
-	if err != nil {
-		fmt.Println(err)
-		c.JSON(http.StatusBadRequest, err)
+	if count == 0 {
+		if name != "" {
+			db.Raw("SELECT count(*) FROM hospital WHERE name like ?", "%"+name+"%").Count(&ct)
+		} else if citys != "" {
+			var arr = strings.Split(citys, ",")
+			db.Raw(`SELECT count(*) FROM hospital where code IN ( WITH RECURSIVE CTE1 as
+				(  select code from city where code IN ?   UNION ALL
+					select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
+				) SELECT * FROM CTE1) `, arr).Count(&ct)
+		} else {
+			db.Raw("SELECT count(*) FROM hospital").Count(&ct)
+		}
+		pagination.StartIndex = 0
+		pagination.TotalRows = ct
+		pagination.TotalPages = int(math.Ceil(float64(ct) / float64(pagination.PageSize)))
 	}
-
-	err = db.Raw(`SELECT * FROM hospital A WHERE code =?`, code).Find(&results).Error
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	c.JSON(http.StatusOK, results)
+
+	c.JSON(http.StatusOK, pagination)
 }

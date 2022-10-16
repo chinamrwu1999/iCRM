@@ -12,6 +12,7 @@ type Pagination struct {
 	Sort       string      `json:"sort,omitempty;query:sort"`
 	TotalRows  int64       `json:"totalRows"`
 	TotalPages int         `json:"totalPages"`
+	StartIndex int         `json:"startIndex"`
 	Rows       interface{} `json:"rows"`
 }
 

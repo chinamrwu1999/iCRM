@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -53,28 +52,9 @@ func main() {
 		}
 	}) // handlerCustomer)
 
-	router.GET("/hospital/:hospitalId", func(ctx *gin.Context) {
-		switch ctx.Param("hospitalId") {
-		case "list":
-			ListHospitals(ctx)
-		default:
-			fetchHospital(ctx)
-		}
-	}) // handlerCustomer)
-	router.POST("/hospital/:hospitalId", func(ctx *gin.Context) {
-		switch ctx.Param("hospitalId") {
-		case "query":
-			{
-				fmt.Println("hospital post query......")
-				QueryHospitals(ctx)
-			}
-		case "add":
-			AddHospital(ctx)
-		case "update":
-			UpdateHospital(ctx)
-		}
-	}) // handlerCustomer)
-
+	router.GET("/hospital/:hospitalId",	fetchHospital) // handlerCustomer)
+	router.POST("/hospitals/list", QueryHospitals) // handlerCustomer)
+    router.POST("/hospital/add",AddHospital)
 	router.GET("/market/areas", ListAreas)
 	router.GET("/market/provinces/:areaId", ListMarketProvinces)
 	router.GET("/market/citys/:provinceId", ListMarketCitys)
