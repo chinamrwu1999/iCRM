@@ -1,5 +1,5 @@
 
-INSERT INTO Employees(ID,Name) VALUES
+INSERT INTO Employee(ID,Name) VALUES
 ('15010001','ÕÅÁ¼Â»'),
 ('15010003','µ«ÑÞÁØ'),
 ('15010006','¶­À¼À¼'),

@@ -99,11 +99,12 @@ create table positionName(
 delete from PositionName;
 INSERT INTO PositionName values('SS','大区总监'),('PM','省区经理'),('MM','招商推广经理'),('SM','销售主管');
 
-create table parketPerson(
+create table marketPerson(
    EmployeeId varchar(10) not null, # 员工号
    Code varchar(10) not null, # 行政区号
    Status TINYINT(1), # 状态：0离职,0 在职
    startDate dateTime default now(), # 开始日期
+   
    primary key(EmployeeId,Code)
 );
 
