@@ -138,6 +138,13 @@ func QueryHospitals(c *gin.Context) {
 // 销售部员工各自负责区域的医院列表
 func MyHospitals(c *gin.Context) {
 
+	var pagination Pagination
+	//var ct int64
+	size, offset, count, sort := PaginationInf(c)
+	pagination.PageSize = size
+	pagination.StartIndex = offset + size
+	//var err error
+
 	sql := `SELECT A.ID, A.Name,C6.name as City,C7.name as Province, 
     C1.Label as HType,C4.label as Grade 
     FROM Hospital A
@@ -155,18 +162,7 @@ func MyHospitals(c *gin.Context) {
 	   ) SELECT * FROM CTE1
     ) ORDER BY ? limit ?,?`
 
-   
-	var pagination Pagination
-	var ct int64
-	size, offset, count, sort := PaginationInf(c)
-	pagination.PageSize = size
-	pagination.StartIndex = offset + size
-	var err error
-
-
-
-
-
+	fmt.Println(count)
 
 	var paras map[string]string
 
@@ -177,6 +173,6 @@ func MyHospitals(c *gin.Context) {
 	}
 	employeeID := paras["employeeID"]
 
-	db.Raw(sql, employeeID, employeeID)
+	db.Raw(sql, employeeID, employeeID, sort, offset, size)
 
 }
