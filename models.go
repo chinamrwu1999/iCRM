@@ -13,16 +13,7 @@ type Department struct {
 	ParentId uint   `gorm:"column:parentId"`
 }
 
-type Employee struct {
-	ID           string // 主键
-	Departmentid int8
-	Name         string
-	Email        string
-	Password     string
-	Gender       string
-	Role         string
-	Status       string
-}
+
 
 ////////////////////////////////////////////////////
 
@@ -51,3 +42,11 @@ type PostParameters struct {
 	Codes string
 	Txt   string
 }
+
+type Message struct {
+	Type string
+	content interface{}
+	action string 
+}
+
+

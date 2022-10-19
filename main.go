@@ -4,6 +4,10 @@ import (
 	"net/http"
 	"strings"
 
+	"encoding/gob"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -15,6 +19,7 @@ var db *gorm.DB
 var err error
 
 func main() {
+    gob.Register(Employee{})
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 
 		NamingStrategy: schema.NamingStrategy{
@@ -24,6 +29,11 @@ func main() {
 
 		}})
 	router := gin.Default()
+
+	store := cookie.NewStore([]byte("secret"))
+	router.Use(sessions.Sessions("mysession", store))
+
+
 	router.LoadHTMLGlob("html/*.html")
 	router.StaticFS("/assets", http.Dir("html/assets"))
 	router.StaticFile("/favicon.ico", "html/favicon.ico")
@@ -52,9 +62,10 @@ func main() {
 		}
 	}) // handlerCustomer)
 
-	router.GET("/hospital/:hospitalId",	fetchHospital) // handlerCustomer)
-	router.POST("/hospitals/list", QueryHospitals) // handlerCustomer)
-    router.POST("/hospital/add",AddHospital)
+	router.GET("/hospital/:hospitalId", fetchHospital) // handlerCustomer)
+	router.POST("/hospitals/list", QueryHospitals)     // handlerCustomer)
+	router.POST("/hospital/add", AddHospital)
+	router.POST("/hospital/update", UpdateHospital)
 	router.GET("/market/areas", ListAreas)
 	router.GET("/market/provinces/:areaId", ListMarketProvinces)
 	router.GET("/market/citys/:provinceId", ListMarketCitys)
