@@ -27,20 +27,25 @@ func UserLogin(c *gin.Context) {
 		c.String(http.StatusBadRequest, "错误:%v", err)
 		return
 	}
-	userId := params["userId"]
-	password := params["password"]
-
+	userId := params["UserId"]
+	password := params["Password"]
+	fmt.Printf("\nuserId=%s password=%s\n", userId, password)
 	var user Employee
 
-	err := db.Raw("SELECT * FROM employee WHERE userID=? and password=MD5(?)", userId, password).Find(&user).Error
+	err := db.Raw("SELECT * FROM employee WHERE ID=? and password=MD5(?)", userId, password).Find(&user).Error
 
 	if err != nil {
+		fmt.Println("user login error")
 		c.JSON(http.StatusOK, Message{"error", "userId and password not match", ""})
 	}
 
 	session := sessions.Default(c)
-	session.Set("userId", user)
+
+	token := GetMD5Hash(userId+"@ms")
+	session.Set(token, user)
 	session.Save()
-	fmt.Println(userId + "login successfully")
-	c.JSON(http.StatusOK, Message{"success", "OK", ""})
+	fmt.Println(userId + " login successfully")
+	fmt.Println("token=" + token)
+	c.Header("token", token)
+	c.JSON(http.StatusOK, user)
 }

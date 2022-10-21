@@ -19,7 +19,7 @@ var db *gorm.DB
 var err error
 
 func main() {
-    gob.Register(Employee{})
+	gob.Register(Employee{})
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 
 		NamingStrategy: schema.NamingStrategy{
@@ -33,11 +33,11 @@ func main() {
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("mysession", store))
 
-
 	router.LoadHTMLGlob("html/*.html")
 	router.StaticFS("/assets", http.Dir("html/assets"))
 	router.StaticFile("/favicon.ico", "html/favicon.ico")
 	router.GET("/", index)
+	router.POST("/login", UserLogin)
 	router.POST("/goal/add", saveGoal)
 
 	router.GET("/codes/:type", getCodes)

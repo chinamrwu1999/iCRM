@@ -4,6 +4,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"crypto/md5"
+    "encoding/hex"
 )
 
 func PaginationInf(ctx *gin.Context) (int, int, int, string) {
@@ -25,4 +27,10 @@ func PaginationInf(ctx *gin.Context) (int, int, int, string) {
 	}
 	offset := (page - 1) * size
 	return size, offset, count, sort
+}
+
+func GetMD5Hash(text string) string {
+    hasher := md5.New()
+    hasher.Write([]byte(text))
+    return hex.EncodeToString(hasher.Sum(nil))
 }
