@@ -1,21 +1,19 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"crypto/md5"
-    "encoding/hex"
 )
 
 func PaginationInf(ctx *gin.Context) (int, int, int, string) {
 	page, _ := strconv.Atoi(ctx.Query("page"))
 	size, _ := strconv.Atoi(ctx.Query("size"))
-	count, _ := strconv.Atoi(ctx.Query("count"))
+	count, _ := strconv.Atoi(ctx.Query("count")) //count==0 时需求查询记录总数
 	sort := ctx.Query("sort")
-	if page == 0 {
-		page = 1
-	}
+
 	switch {
 	case size > 100:
 		size = 100
@@ -25,12 +23,15 @@ func PaginationInf(ctx *gin.Context) (int, int, int, string) {
 	if sort == "" {
 		sort = "ID"
 	}
-	offset := (page - 1) * size
+
+	offset := page * size
+
+	//fmt.Printf("page=%d offsize=%d ", page, offset)
 	return size, offset, count, sort
 }
 
 func GetMD5Hash(text string) string {
-    hasher := md5.New()
-    hasher.Write([]byte(text))
-    return hex.EncodeToString(hasher.Sum(nil))
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
 }

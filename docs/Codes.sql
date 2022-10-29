@@ -40,3 +40,22 @@ INSERT INTO code(label,code,codeType,displayOrder,Remark) values('女','F','gend
 ('公立医院','NH','Comp',2,'企业性质'),
 ('民营医院','PH','Comp',3,'企业性质'),
 ('外资企业','FE','Comp',4,'企业性质');
+
+
+INSERT INTO code(label,code,codeType,displayOrder,Remark) values
+('客户筛选/接洽客户','S0','saleStage', 0,'销售工作进展'),
+('代理商签约','S1','saleStage',1,'销售工作进展'),
+('科室提单','S2','saleStage',2,'销售工作进展'),
+('院内立项','S3','saleStage', 3,'销售工作进展'),
+('过会','S4','saleStage',4,'销售工作进展'),
+('递交材料','S5','saleStage',5,'销售工作进展'),
+('招标/议价','S6','saleStage', 6,'销售工作进展'),
+('招标公示','S7','saleStage',7,'销售工作进展'),
+('签订采购合同','S8','saleStage',8,'销售工作进展'),
+('上收费系统','S9','saleStage', 9,'销售工作进展'),
+('临采','S10','saleStage',10,'销售工作进展'),
+('医院收样外送','S11','saleStage',10,'销售工作进展');
+
+INSERT INTO code(label,code,codeType,displayOrder,Remark) values
+
+

@@ -12,39 +12,7 @@ create table employee(
    Password varchar(100) 
 );
 
-;
-create table customer(
-    ID int not null auto_increment primary key,
-    FullName varchar(60) not  null,
-    ShortName varchar(30),
-    CType char(20),
-    Scale char(20),
-    Status char(20),
-    Level char(20),
-    GetWay char(20),
-    Nation char(20) default 'cn',
-    Province char(6),
-    City Char(6),
-    Address varchar(100),
-    Description varchar(300),
-    CreateTime datetime default now()
-);
 
-create table customerContact(
-    CustomerId int not null,
-    Name varchar(30) not null,
-    Email varchar(50),
-    Phone varchar(20),
-    UpdateTime datetime not null default now(),
-    primary key(CustomerId,Phone)
-);
-Create table customerBank(
-    CustomerId int not null primary key,
-    BankName varchar(200),
-    BankAccount varchar(60),
-    AccountName varchar(200),
-    TaxID varchar(60)
-);
 
 create table code(
     Label varchar(100) not null,
@@ -65,29 +33,27 @@ create table city(
     ParentId varchar(20)
 );
 
+drop table marketArea;
 create table marketArea(    # 市场大区名：东大区、南大区、北大区等
-    AreaId SMALLINT not null primary key,
+    AreaId varchar(2) not null primary key,
     Name varchar(30) not null
 );
+INSERT INTO marketArea VALUES('E','东大区'),('S','南大区'),('N','北大区');
 
-delete from marketArea;
-INSERT INTO marketArea VALUES(0,'东大区'),(1,'南大区'),(2,'北大区'),(3,'国际');
-
+drop table marketProvince;
 create table marketProvince ( # 各个市场大区包含的省市
-   AreaId int not null,
+   AreaId char not null,
    Code varchar(10) not null,
    primary key(AreaId,Code)
 );
 
+delete from marketProvince;
 INSERT INTO marketProvince VALUES
-(0,'110000'),(0,'310000'),(0,'320000'),(0,'320100'),(0,'320800'),
-(0,'321000'),(0,'321100'),(0,'321200'),(0,'321300'),(0,'330000'),
-(0,'340000'),(0,'370000'),(0,'410000'),(0,'420000'),(2,'120000'),
-(2,'130000'),(2,'140000'),(2,'150000'),(2,'210000'),(2,'220000'),
-(2,'230000'),(2,'610000'),(2,'620000'),(2,'630000'),(2,'640000'),
-(2,'650000'),(1,'350000'),(1,'360000'),(1,'430000'),(1,'440100'),
-(1,'440300'),(1,'450000'),(1,'460000'),(1,'500000'),(1,'510000'),
-(1,'520000'),(1,'530000'),(1,'540000');
+('E','110000'),('E','310000'),('E','320000'),('E','320100'),('E','320800'),('E','321000'),('E','321100'),('E','321200'),('E','321300'),('E','330000'),
+('E','340000'),('E','370000'),('E','410000'),('E','420000'),
+('N','120000'),('N','130000'),('N','140000'),('N','150000'),('N','210000'),('N','220000'),('N','230000'),('N','610000'),('N','620000'),
+('N','630000'),('N','640000'),('N','650000'),('S','350000'),('S','360000'),('S','430000'),('S','440100'),
+('S','440300'),('S','450000'),('S','460000'),('S','500000'),('S','510000'),('S','520000'),('S','530000'),('S','540000');
 
 
 
@@ -115,3 +81,58 @@ create table hospital(
     Grade varchar(10),
     HType varchar(10)
 );
+
+
+create table customer(
+     ID int auto_increment not null primary key,
+     Name varchar(100) not null,
+     ShortName varchar(30)
+     Code varchar(10) not  null,
+     CType char(20),
+     Address varchar(100),
+     CreateTime datetime default now()
+)
+
+
+
+create table customer1(
+    ID int not null auto_increment primary key,
+    FullName varchar(60) not  null,
+    ShortName varchar(30),
+    CType char(20),
+    Scale char(20),
+    Status char(20),
+    Level char(20),
+    GetWay char(20),
+    City varchar(10),
+    Address varchar(100),
+    Description varchar(300),
+    CreateTime datetime default now()
+);
+
+create table customerContact(
+    CustomerId int not null,
+    Name varchar(30) not null,
+    Email varchar(50),
+    Phone varchar(20),
+    UpdateTime datetime not null default now(),
+    primary key(CustomerId,Phone)
+);
+Create table customerBank(
+    CustomerId int not null primary key,
+    BankName varchar(200),
+    BankAccount varchar(60),
+    AccountName varchar(200),
+    TaxID varchar(60)
+);
+
+###################################
+create table businessLog(
+    ID BIGINT not null auto_increment primary key,
+    EmployeeId varchar(10) not null,
+    targetType  int,
+    hospitalId int,
+    workingDate datetime default now(),
+    stage int
+    description varchar(500) not null
+)

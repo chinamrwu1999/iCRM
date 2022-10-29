@@ -5,7 +5,6 @@ import (
 	"math"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin" //  go get -u github.com/gin-gonic/gin
 )
@@ -21,7 +20,7 @@ type Hospital struct {
 func AddHospital(c *gin.Context) {
 	var obj Hospital
 	if err := c.BindJSON(&obj); err != nil {
-		fmt.Println("发生错误")
+		fmt.Println("添加新医院时，解析参数发生错误")
 		fmt.Println(obj)
 		c.String(http.StatusBadRequest, "错误:%v", err)
 		return
@@ -58,7 +57,7 @@ func UpdateHospital(c *gin.Context) {
 
 	var obj Hospital
 	if err := c.BindJSON(&obj); err != nil {
-		fmt.Println("解析Hospital的json发生错误")
+		fmt.Println("更新医院信息：解析Hospital的json发生错误")
 		c.String(http.StatusBadRequest, "错误:%v", err)
 		return
 	}
@@ -73,12 +72,13 @@ func UpdateHospital(c *gin.Context) {
 	c.JSON(http.StatusOK, obj)
 }
 
+/***************************** 查询  *****************************************/
 func QueryHospitals(c *gin.Context) {
 	var objs []map[string]interface{}
 	var paras map[string]string
 
 	if err := c.BindJSON(&paras); err != nil {
-		fmt.Println("发生错误")
+		fmt.Println("查询医院：解析参数发生错误")
 		c.String(http.StatusBadRequest, "错误:%v", err)
 		return
 	}
@@ -91,37 +91,64 @@ func QueryHospitals(c *gin.Context) {
 	left join code C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
 	left join code C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
 	left join city C6 ON A.Code   =  C6.code
-	left join city C7 ON C7.code  =  C6.parentId `
+	left join city C7 ON C7.code  =  C6.parentId 
+	WHERE A.code IN (
+		WITH RECURSIVE CTE1 as	(  
+						SELECT code FROM marketperson  WHERE employeeId=? UNION 
+						SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
+						UNION ALL SELECT t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
+		) SELECT * FROM CTE1
+     )
+	`
+	user := getUserInf(c)
 	var pagination Pagination
 	var ct int64
 	size, offset, count, sort := PaginationInf(c)
+	//fmt.Printf("offset=%d\n", offset)
 	pagination.PageSize = size
-	pagination.StartIndex = offset + size
+	pagination.StartIndex = offset
 	var err error
 	if name != "" { // 模糊查询
-		sql += "WHERE A.name like ? ORDER BY ? limit ?,?"
-		err = db.Raw(sql, "%"+name+"%", sort, offset, size).Find(&objs).Error
+		sql += "AND A.name like ? ORDER BY ? limit ?,?"
+		err = db.Raw(sql, user.ID, user.ID, "%"+name+"%", sort, offset, size).Find(&objs).Error
 	} else if citys != "" { //根据区域查询
-		var arr = strings.Split(citys, ",")
-		sql += "WHERE A.code in ? ORDER BY ? limit ?,?"
-		err = db.Raw(sql, arr, sort, offset, size).Find(&objs).Error
+		//var arr = strings.Split(citys, ",")
+		sql += `  AND A.code IN ( 
+			WITH RECURSIVE CTE1 as	(  
+				 SELECT code FROM marketprovince WHERE areaId =? UNION
+				 SELECT ?  
+				 UNION ALL
+					select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
+			) SELECT * FROM CTE1
+			)  ORDER BY ? limit ?,?`
+		err = db.Raw(sql, user.ID, user.ID, citys, citys, sort, offset, size).Find(&objs).Error
 	} else { //列出所有
-		sql += "ORDER BY ? limit ?,?"
-		err = db.Raw(sql, sort, offset, size).Find(&objs).Error
+		sql += " ORDER BY ? limit ?,?"
+		err = db.Raw(sql, user.ID, user.ID, sort, offset, size).Find(&objs).Error
 	}
 	pagination.Rows = objs
 
 	if count == 0 {
+		countSQL := ` SELECT count(*) FROM hospital A
+		WHERE A.code IN (
+			WITH RECURSIVE CTE1 as	(  
+							SELECT code FROM marketperson  WHERE employeeId=? UNION 
+							SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
+							UNION ALL SELECT t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
+			) SELECT * FROM CTE1 ) `
 		if name != "" {
-			db.Raw("SELECT count(*) FROM hospital WHERE name like ?", "%"+name+"%").Count(&ct)
+			db.Raw(countSQL+` AND  A.name like ?`, user.ID, user.ID, "%"+name+"%").Count(&ct)
 		} else if citys != "" {
-			var arr = strings.Split(citys, ",")
-			db.Raw(`SELECT count(*) FROM hospital where code IN ( WITH RECURSIVE CTE1 as
-				(  select code from city where code IN ?   UNION ALL
-					select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
-				) SELECT * FROM CTE1) `, arr).Count(&ct)
+			//var arr = strings.Split(citys, ",")
+			db.Raw(countSQL+` AND A.code IN ( 
+				WITH RECURSIVE CTE2 as	(  
+					 SELECT code FROM marketprovince WHERE areaId =? UNION
+					 SELECT ?  
+					 UNION ALL
+						select t1.code from city t1 inner join CTE2 t2  on t1.parentID = t2.code
+				) SELECT * FROM CTE2) `, user.ID, user.ID, citys, citys).Count(&ct)
 		} else {
-			db.Raw("SELECT count(*) FROM hospital").Count(&ct)
+			db.Raw(countSQL).Count(&ct)
 		}
 		pagination.StartIndex = 0
 		pagination.TotalRows = ct
@@ -135,15 +162,17 @@ func QueryHospitals(c *gin.Context) {
 	c.JSON(http.StatusOK, pagination)
 }
 
-// 销售部员工各自负责区域的医院列表
+// 用户负责区域的医院列表
 func MyHospitals(c *gin.Context) {
 
 	var pagination Pagination
-	//var ct int64
+	var ct int64
 	size, offset, count, sort := PaginationInf(c)
 	pagination.PageSize = size
-	pagination.StartIndex = offset + size
+	pagination.StartIndex = offset
 	//var err error
+
+	user := getUserInf(c)
 
 	sql := `SELECT A.ID, A.Name,C6.name as City,C7.name as Province, 
     C1.Label as HType,C4.label as Grade 
@@ -155,24 +184,34 @@ func MyHospitals(c *gin.Context) {
 	WHERE A.code IN (
  	WITH RECURSIVE CTE1 AS (  
 		SELECT distinct code from city where code IN (
-			SELECT T2.code FROM marketperson T1,MarketProvince T2 where cast(T1.code as UNSIGNED)=T2.areaID AND T1.employeeID=?
+			SELECT T2.code FROM marketperson T1,MarketProvince T2 where T1.code =T2.areaID AND T1.employeeID=?
 		    UNION
-			SELECT code FROM marketperson  where employeeID=?;
+			SELECT code FROM marketperson  where employeeID=?
   )UNION ALL   SELECT t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
-	   ) SELECT * FROM CTE1
-    ) ORDER BY ? limit ?,?`
+	   ) SELECT * FROM CTE1    ) ORDER BY ? limit ?,?`
 
-	fmt.Println(count)
+	var objs []map[string]interface{}
+	err = db.Raw(sql, user.ID, user.ID, sort, offset, size).Find(&objs).Error
+	pagination.Rows = objs
 
-	var paras map[string]string
+	if count == 0 {
+		db.Raw(` SELECT count(*) FROM hospital A where A.code in (WITH RECURSIVE CTE1 as	(  
+						SELECT code FROM marketperson  WHERE employeeId=? UNION 
+						SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
+						UNION ALL
+						   select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
+				   ) SELECT * FROM CTE1 )`, user.ID, user.ID).Count(&ct)
 
-	if err := c.BindJSON(&paras); err != nil {
-		fmt.Println("发生错误")
-		c.String(http.StatusBadRequest, "错误:%v", err)
+	}
+	pagination.StartIndex = 0
+	pagination.TotalRows = ct
+	pagination.TotalPages = int(math.Ceil(float64(ct) / float64(pagination.PageSize)))
+
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
-	employeeID := paras["employeeID"]
 
-	db.Raw(sql, employeeID, employeeID, sort, offset, size)
+	c.JSON(http.StatusOK, pagination)
 
 }

@@ -41,11 +41,18 @@ func UserLogin(c *gin.Context) {
 
 	session := sessions.Default(c)
 
-	token := GetMD5Hash(userId+"@ms")
+	token := GetMD5Hash(userId + "@ms")
 	session.Set(token, user)
 	session.Save()
-	fmt.Println(userId + " login successfully")
-	fmt.Println("token=" + token)
 	c.Header("token", token)
 	c.JSON(http.StatusOK, user)
+}
+
+func getUserInf(c *gin.Context) Employee {
+	token := c.GetHeader("token")
+	println(token)
+	session := sessions.Default(c)
+	user := session.Get(token).(Employee)
+	return (user)
+
 }

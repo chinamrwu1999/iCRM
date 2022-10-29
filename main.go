@@ -11,23 +11,26 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 )
 
-var dsn = "root:helloboy@tcp(localhost:3306)/icrm?charset=utf8mb4&parseTime=True&loc=Local"
+var dsn = "root:helloboy@tcp(localhost:3309)/icrm?charset=utf8mb4&parseTime=True&loc=Local"
 var db *gorm.DB
 var err error
 
 func main() {
 	gob.Register(Employee{})
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-
+		Logger: logger.Default.LogMode(logger.Info),
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,                              // use singular table name, table for `User` would be `user` with this option enabled
 			NoLowerCase:   true,                              // skip the snake_casing of names
 			NameReplacer:  strings.NewReplacer("CID", "Cid"), // use name replacer to change struct/field name before convert it to db name
 
 		}})
+	//db.SetLogger(log.New(os.Stdout, "\r\n", 0))
+	//db.LogMode(true)
 	router := gin.Default()
 
 	store := cookie.NewStore([]byte("secret"))
@@ -43,32 +46,24 @@ func main() {
 	router.GET("/codes/:type", getCodes)
 	router.GET("/provinces", fetchProvines)
 	router.GET("/city/:code", fetchChildCitys)
-	//router.POST("/customer/add", CustomerAdd)
-	//router.GET("/customer/list", handlerCustomerList)
-	router.GET("/customer/:customerId", func(ctx *gin.Context) {
-		switch ctx.Param("customerId") {
-		case "list":
-			ListCustomers(ctx)
-		default:
-			fetchCustomer(ctx)
-		}
-	}) // handlerCustomer)
-	router.POST("/customer/:customerId", func(ctx *gin.Context) {
-		switch ctx.Param("customerId") {
-		case "add":
-			AddCustomer(ctx)
-		case "update":
-			UpdateCustomer(ctx)
-		}
-	}) // handlerCustomer)
+	router.GET("/topcity", ListTopAreas)
+	router.GET("/childcity/:parentId", ListChildAreas)
+
+	router.GET("/market/areas", ListAreas)
+	router.GET("/market/provinces/:areaId", ListMarketProvinces)
+	router.GET("/market/citys/:provinceId", ListMarketCitys)
 
 	router.GET("/hospital/:hospitalId", fetchHospital) // handlerCustomer)
 	router.POST("/hospitals/list", QueryHospitals)     // handlerCustomer)
 	router.POST("/hospital/add", AddHospital)
 	router.POST("/hospital/update", UpdateHospital)
-	router.GET("/market/areas", ListAreas)
-	router.GET("/market/provinces/:areaId", ListMarketProvinces)
-	router.GET("/market/citys/:provinceId", ListMarketCitys)
+	router.GET("/myHospitals", MyHospitals)
+
+	router.GET("/customer/:customerId", fetchCustomer) // handlerCustomer)
+	router.POST("/customers/list", QueryCustomers)     // handlerCustomer)
+	router.POST("/customer/add", AddCustomer)
+	router.POST("/customer/update", UpdateCustomer)
+	router.GET("/myCustomers", MyCustomers)
 
 	router.Run(":3000")
 

@@ -23,10 +23,46 @@ type PositionName struct {
 	Code string `gorm:"column:code"`
 }
 
-func ListAreas(c *gin.Context) {
-	var results []MarketArea
+var SQL = `SELECT * FROM (SELECT * FROM city WHERE code IN ( 
+	WITH RECURSIVE CTE1 as	(  
+		 SELECT code FROM marketperson  WHERE employeeId=? UNION 
+		 SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=?)    
+		 UNION ALL
+			select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
+	) SELECT * FROM CTE1
+	)) AS T0 `
 
-	err := db.Find(&results).Error
+func ListAreas(c *gin.Context) {
+	var results []map[string]interface{}
+	user := getUserInf(c)
+	err := db.Raw(` SELECT areaID as Code,Name FROM marketarea WHERE areaId in (SELECT code FROM marketperson WHERE employeeId =?) UNION 
+	SELECT Code,Name FROM city WHERE code IN (SELECT code FROM marketperson WHERE employeeId= ?) `, user.ID, user.ID).Find(&results).Error
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	c.JSON(http.StatusOK, results)
+
+}
+
+func ListTopAreas(c *gin.Context) {
+	var results []map[string]interface{}
+	user := getUserInf(c)
+	err := db.Raw(` SELECT areaID as Code,Name FROM marketarea WHERE areaId in (SELECT code FROM marketperson WHERE employeeId =?) UNION 
+	SELECT Code,Name FROM city WHERE code IN (SELECT code FROM marketperson WHERE employeeId= ?) `, user.ID, user.ID).Find(&results).Error
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	c.JSON(http.StatusOK, results)
+
+}
+
+func ListChildAreas(c *gin.Context) {
+	var results []map[string]interface{}
+	parentId := c.Param("parentId")
+	err := db.Raw(` SELECT Code,Name FROM city WHERE code IN (SELECT code FROM marketprovince WHERE areaId=?) UNION
+	SELECT Code,Name FROM city WHERE parentId=?  `, parentId, parentId).Find(&results).Error
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -37,12 +73,12 @@ func ListAreas(c *gin.Context) {
 
 func ListMarketProvinces(c *gin.Context) {
 	var results []map[string]interface{}
-	areaId, err := strconv.Atoi(c.Param("areaId"))
+	areaId := c.Param("areaId")
 
-	if err != nil {
-		fmt.Println(err)
-		c.JSON(http.StatusBadRequest, err)
-	}
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	c.JSON(http.StatusBadRequest, err)
+	// }
 
 	err = db.Raw(`SELECT A.*,B.Name FROM MarketProvince A LEFT JOIN city B ON A.Code=B.Code WHERE A.areaId=?`, areaId).Find(&results).Error
 	if err != nil {
