@@ -84,18 +84,6 @@ create table hospital(
 
 
 create table customer(
-     ID int auto_increment not null primary key,
-     Name varchar(100) not null,
-     ShortName varchar(30)
-     Code varchar(10) not  null,
-     CType char(20),
-     Address varchar(100),
-     CreateTime datetime default now()
-)
-
-
-
-create table customer1(
     ID int not null auto_increment primary key,
     FullName varchar(60) not  null,
     ShortName varchar(30),
@@ -136,3 +124,46 @@ create table businessLog(
     stage int
     description varchar(500) not null
 )
+
+#代理商
+create table proxy(
+    ID int not null auto_increment primary key,
+    FullName varchar(60) not  null,
+    ShortName varchar(30),
+    Status char(20),
+    City varchar(10),
+    Address varchar(100),
+    CreateTime datetime default now()
+);
+
+
+
+create table Estimation( 
+    customerId int not null,
+    productId varchar(20) not null,
+    saleYear int not null,
+    saleMonth TINYINT,
+    price decimal(5,2),
+    amount int not null,
+    submiter varchar(10),
+    createTime dateTime default now(),
+    primary key(customerId,productId,saleYear,saleMonth)
+ );
+
+ create table customerProxy(
+    hospitalID int not null,
+    proxyId int not null,
+    status flag varchar(4) not null default 'A' , # A:  
+    createTime dateTime now()
+  );
+
+drop table product;
+create table product( 
+    ID int not null auto_increment primary key,
+    productId varchar(20) not null unique ,
+    Name varchar(30) not null,
+    basePrice decimal(7,2)
+);
+INSERT INTO product (productId,Name,basePrice) values
+('ACK','艾长康试剂',180.0),('ACKLDT','艾长康收样检测',360.0),
+('AXA','艾消安试剂',580.0),('AXALDT','艾消安收样检测',880.0);

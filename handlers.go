@@ -51,3 +51,9 @@ func fetchChildCitys(c *gin.Context) {
 	objs := cityChildren(code)
 	c.JSON(http.StatusOK, objs)
 }
+
+
+func allProducts(c *gin.Context) {
+	objs := fetchProducts()
+	c.JSON(http.StatusOK, objs)
+}

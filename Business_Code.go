@@ -30,4 +30,12 @@ func cityChildren(code string) []City {
 	return (objs)
 }
 
+func fetchProducts() []Product {
 
+	var products []Product
+	err := db.Find(&products).Error
+	if err != nil {
+		fmt.Println(err)
+	}
+	return (products)
+}

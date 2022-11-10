@@ -49,4 +49,10 @@ type Message struct {
 	action string 
 }
 
+type Product struct {
+	ID uint `gorm:"column:ID"`
+	Name string `gorm:"column:name"`
+	ProductId string `gorm:"column:productId"`
+	BasePrice float32 `gorm:"column:basePrice"`
+}
 

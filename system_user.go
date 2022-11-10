@@ -50,7 +50,6 @@ func UserLogin(c *gin.Context) {
 
 func getUserInf(c *gin.Context) Employee {
 	token := c.GetHeader("token")
-	println(token)
 	session := sessions.Default(c)
 	user := session.Get(token).(Employee)
 	return (user)

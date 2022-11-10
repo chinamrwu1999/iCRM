@@ -11,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 )
 
@@ -20,9 +19,10 @@ var db *gorm.DB
 var err error
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
 	gob.Register(Employee{})
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		//Logger: logger.Default.LogMode(logger.Info),
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,                              // use singular table name, table for `User` would be `user` with this option enabled
 			NoLowerCase:   true,                              // skip the snake_casing of names
@@ -44,6 +44,7 @@ func main() {
 	router.POST("/goal/add", saveGoal)
 
 	router.GET("/codes/:type", getCodes)
+	router.GET("/products", allProducts)
 	router.GET("/provinces", fetchProvines)
 	router.GET("/city/:code", fetchChildCitys)
 	router.GET("/topcity", ListTopAreas)
@@ -64,6 +65,8 @@ func main() {
 	router.POST("/customer/add", AddCustomer)
 	router.POST("/customer/update", UpdateCustomer)
 	router.GET("/myCustomers", MyCustomers)
+
+	router.POST("/estimate/save", AddEstimate)
 
 	router.Run(":3000")
 
