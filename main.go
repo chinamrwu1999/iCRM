@@ -15,6 +15,8 @@ import (
 )
 
 var dsn = "root:helloboy@tcp(localhost:3309)/icrm?charset=utf8mb4&parseTime=True&loc=Local"
+
+// var dsn = "chinamrwu:helloboy@tcp(www.amswh.com:3306)/icrm?charset=utf8mb4&parseTime=True&loc=Local"
 var db *gorm.DB
 var err error
 
@@ -32,13 +34,14 @@ func main() {
 	//db.SetLogger(log.New(os.Stdout, "\r\n", 0))
 	//db.LogMode(true)
 	router := gin.Default()
-
+	// var htmlDir = "D:/tools/nginx-1.12.2/html/iCRM"
+	var htmlDir = "C:/Tools/nginx-1.20.2/html/iCRM"
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("mysession", store))
 
-	router.LoadHTMLGlob("html/*.html")
-	router.StaticFS("/assets", http.Dir("html/assets"))
-	router.StaticFile("/favicon.ico", "html/favicon.ico")
+	router.LoadHTMLGlob(htmlDir + "/*.html")
+	router.StaticFS("/assets", http.Dir(htmlDir+"/assets"))
+	router.StaticFile("/favicon.ico", htmlDir+"/favicon.ico")
 	router.GET("/", index)
 	router.POST("/login", UserLogin)
 	router.POST("/goal/add", saveGoal)
@@ -67,6 +70,7 @@ func main() {
 	router.GET("/myCustomers", MyCustomers)
 
 	router.POST("/estimate/save", AddEstimate)
+	router.POST("estimate/history", HistoryEstimate)
 
 	router.Run(":3000")
 
