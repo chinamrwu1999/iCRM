@@ -69,6 +69,18 @@ func main() {
 	router.POST("/customer/update", UpdateCustomer)
 	router.GET("/myCustomers", MyCustomers)
 
+	router.GET("/proxy/:customerId", fetchProxy) // handlerCustomer)
+	router.POST("/proxys/list", QueryProxys)     // handlerCustomer)
+	router.POST("/proxy/add", AddProxy)
+	router.POST("/proxy/update", UpdateCustomer)
+	router.GET("/myProxys", MyProxys)
+
+	router.GET("/Blogs/:logId", fetchProxy) // handlerCustomer)
+	router.POST("/Blogs/list", QueryProxys) // handlerCustomer)
+	router.POST("/Blogs/add", AddLogs)
+	router.POST("/Blogs/update", UpdateCustomer)
+	router.GET("/myBlogs", MyProxys)
+
 	router.POST("/estimate/save", AddEstimate)
 	router.POST("estimate/history", HistoryEstimate)
 

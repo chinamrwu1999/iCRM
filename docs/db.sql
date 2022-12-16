@@ -77,7 +77,9 @@ create table marketPerson(
 create table hospital(
     ID int auto_increment not null primary key,
     Name varchar(100) not null,
-    Code varchar(10) not  null,
+    ShortName varchar(20),
+    City varchar(10) not  null,
+    
     Grade varchar(10),
     HType varchar(10)
 );
@@ -85,18 +87,45 @@ create table hospital(
 
 create table customer(
     ID int not null auto_increment primary key,
-    FullName varchar(60) not  null,
+    Name varchar(60) not  null,
     ShortName varchar(30),
+    City varchar(10),
+
     CType char(20),
     Scale char(20),
     Status char(20),
     Level char(20),
     GetWay char(20),
-    City varchar(10),
     Address varchar(100),
     Description varchar(300),
     CreateTime datetime default now()
 );
+#代理商
+create table proxy(
+    ID int not null auto_increment primary key,
+    Name varchar(60) not  null,
+    ShortName varchar(30),
+     City varchar(10),
+    Status char(20),
+    Address varchar(100),
+    CreateTime datetime default now()
+);
+
+ create table proxyCustomer(
+    proxyId int not null,
+    customerId int not null
+    status flag varchar(4) not null default 'A' , # A:  
+    createTime dateTime now(),
+    primary key(proxyId,customerId)
+  );
+
+ create table proxyHospital(
+    proxyId int not null,
+    hospitalID int not null,
+    status flag varchar(4) not null default 'A' , # A:  
+    createTime dateTime now(),
+    primary key(proxyId,hospitalId)
+  );
 
 create table customerContact(
     CustomerId int not null,
@@ -115,30 +144,25 @@ Create table customerBank(
 );
 
 ###################################
+drop table businessLog;
 create table businessLog(
     ID BIGINT not null auto_increment primary key,
     EmployeeId varchar(10) not null,
-    targetType  int,
     hospitalId int,
-    workingDate datetime default now(),
-    stage int
-    description varchar(500) not null
-)
-
-#代理商
-create table proxy(
-    ID int not null auto_increment primary key,
-    FullName varchar(60) not  null,
-    ShortName varchar(30),
-    Status char(20),
-    City varchar(10),
-    Address varchar(100),
-    CreateTime datetime default now()
+    proxyId int,
+    customerId int,
+    content varchar(500) not null,
+    stage SMALLINT,
+    workingDate date default(CURRENT_DATE),
+    createTime time default(time(now())),
+    unique(EmployeeId,workingDate,hospitalId)
 );
 
 
 
-create table Estimation( 
+
+
+create table estimation( 
     customerId int not null,
     productId varchar(20) not null,
     saleYear int not null,
@@ -150,12 +174,7 @@ create table Estimation(
     primary key(customerId,productId,saleYear,saleMonth)
  );
 
- create table customerProxy(
-    hospitalID int not null,
-    proxyId int not null,
-    status flag varchar(4) not null default 'A' , # A:  
-    createTime dateTime now()
-  );
+
 
 drop table product;
 create table product( 

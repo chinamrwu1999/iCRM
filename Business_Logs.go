@@ -9,31 +9,26 @@ import (
 	"github.com/gin-gonic/gin" //  go get -u github.com/gin-gonic/gin
 )
 
-type Customer struct {
-	ID          uint   `gorm:"column:ID"`
-	Name        string `gorm:"column:name"`
-	ShortName   string `gorm:"column:shortname"`
-	CType       string `gorm:"column:ctype"`
-	Scale       string `gorm:"column:scale"`
-	Status      string `gorm:"column:status"`
-	Level       string `gorm:"column:level"`
-	GetWay      string `gorm:"column:getway"`
-	City        string `gorm:"column:city"`
-	Address     string `gorm:"column:address"`
-	Description string `gorm:"column:description"`
+type BusinessLog struct {
+	ID         uint   `gorm:"column:ID"`
+	EmployeeId string `gorm:"column:employeeId"`
+	HospitalId int    `gorm:"column:hospitalId"`
+	ProxyId    int    `gorm:"column:proxyId"`
+	CustomerId int    `gorm:"column:customerId"`
+	Content    string `gorm:"column:content"`
 }
 
-func AddCustomer(c *gin.Context) {
-	var obj Customer
+func AddLogs(c *gin.Context) {
+	var obj BusinessLog
 	if err := c.BindJSON(&obj); err != nil {
-		fmt.Println("发生错误")
+		fmt.Println("添工作日志时，解析参数发生错误")
 		fmt.Println(obj)
 		c.String(http.StatusBadRequest, "错误:%v", err)
 		return
 	}
 
 	if err := db.Create(&obj).Error; err != nil {
-		fmt.Println("添加Goal到数据库失败：", err)
+		fmt.Println("添加工作日志到数据库失败：", err)
 		return
 	}
 
@@ -42,16 +37,16 @@ func AddCustomer(c *gin.Context) {
 }
 
 /***************  单个客户信息  ***********************/
-func fetchCustomer(c *gin.Context) {
+func fetchLog(c *gin.Context) {
 
-	customerId, err := strconv.Atoi(c.Param("customerId"))
+	hospitalId, err := strconv.Atoi(c.Param("hospitalId"))
 	if err != nil {
 		fmt.Println(err)
 		c.JSON(http.StatusBadRequest, err)
 	}
 
-	var obj Customer
-	err = db.First(&obj, customerId).Error
+	var obj Hospital
+	err = db.First(&obj, hospitalId).Error
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -59,18 +54,18 @@ func fetchCustomer(c *gin.Context) {
 }
 
 /***************  更新客户信息  ***********************/
-func UpdateCustomer(c *gin.Context) {
+func UpdateLog(c *gin.Context) {
 
-	var obj Customer
+	var obj Hospital
 	if err := c.BindJSON(&obj); err != nil {
-		fmt.Println("解析Customer的json发生错误")
+		fmt.Println("更新医院信息：解析Hospital的json发生错误")
 		c.String(http.StatusBadRequest, "错误:%v", err)
 		return
 	}
 	fmt.Println(obj)
 
 	if err := db.Model(&obj).Updates(&obj).Error; err != nil {
-		fmt.Println("更新Customer到数据库失败：", err)
+		fmt.Println("更新Hospital到数据库失败：", err)
 		return
 	}
 
@@ -79,51 +74,47 @@ func UpdateCustomer(c *gin.Context) {
 }
 
 /***************************** 查询  *****************************************/
-func QueryCustomers(c *gin.Context) {
+func QueryLogs(c *gin.Context) {
 	var objs []map[string]interface{}
 	var paras map[string]string
 
 	if err := c.BindJSON(&paras); err != nil {
-		fmt.Println("发生错误:" + err.Error())
+		fmt.Println("查询医院：解析参数发生错误")
 		c.String(http.StatusBadRequest, "错误:%v", err)
 		return
 	}
 	citys := paras["Citys"]
 	name := paras["Txt"]
 
-	var sql = `SELECT A.ID, A.Name,A.ShortName,A.Address,A.Description,C6.name as Province,C7.name as City,
-	C1.Label as CType,C2.label as Status,C3.label as Scale,C4.label as level,C5.label as GetWay  
-	FROM customer A
-	left join code C1 on A.ctype  =  C1.code AND C1.codeType='customerType'
-	left join code C2 on A.status =  C2.code AND C2.codeType='customerStatus'
-	left join code C3 on A.scale  =  C3.code AND C3.codeType='scale'
-	left join code C4 on A.level  =  C4.code AND C4.codeType='customerGrade'
-	left join code C5 on A.getway =  C5.code AND C5.codeType='customerWay'
-	left join city C6 ON A.City   =  C6.code
+	var sql = `SELECT A.ID, A.Name,C6.name as City,C7.name as Province,
+	C1.Label as HType,C4.label as Grade
+	FROM Hospital A
+	left join code C1 ON A.htype  =  C1.code AND C1.codeType='HospitalType'
+	left join code C4 ON A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
+	left join city C6 ON A.city   =  C6.code
 	left join city C7 ON C7.code  =  C6.parentId 
-	WHERE A.City IN (
+	WHERE A.city IN (
 		WITH RECURSIVE CTE1 as	(  
 						SELECT code FROM marketperson  WHERE employeeId=? UNION 
 						SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
 						UNION ALL SELECT t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
 		) SELECT * FROM CTE1
-     )	`
-
+     )
+	`
+	user := getUserInf(c)
 	var pagination Pagination
 	var ct int64
 	size, offset, count, sort := PaginationInf(c)
 	//fmt.Printf("offset=%d\n", offset)
 	pagination.PageSize = size
 	pagination.StartIndex = offset
-
-	user := getUserInf(c)
-
 	var err error
 	if name != "" { // 模糊查询
-		sql += "AND A.FullName like ? ORDER BY ? limit ?,?"
+		sql += "AND A.name like ? ORDER BY ? limit ?,?"
 		err = db.Raw(sql, user.ID, user.ID, "%"+name+"%", sort, offset, size).Find(&objs).Error
 	} else if citys != "" { //根据区域查询
-		sql += `  AND A.City IN ( 
+		//var arr = strings.Split(citys, ",")
+		sql += `  AND A.city IN ( 
 			WITH RECURSIVE CTE1 as	(  
 				 SELECT code FROM marketprovince WHERE areaId =? UNION
 				 SELECT ?  
@@ -132,7 +123,6 @@ func QueryCustomers(c *gin.Context) {
 			) SELECT * FROM CTE1
 			)  ORDER BY ? limit ?,?`
 		err = db.Raw(sql, user.ID, user.ID, citys, citys, sort, offset, size).Find(&objs).Error
-
 	} else { //列出所有
 		sql += " ORDER BY ? limit ?,?"
 		err = db.Raw(sql, user.ID, user.ID, sort, offset, size).Find(&objs).Error
@@ -140,7 +130,7 @@ func QueryCustomers(c *gin.Context) {
 	pagination.Rows = objs
 
 	if count == 0 {
-		countSQL := ` SELECT count(*) FROM customer A
+		countSQL := ` SELECT count(*) FROM hospital A
 		WHERE A.city IN (
 			WITH RECURSIVE CTE1 as	(  
 							SELECT code FROM marketperson  WHERE employeeId=? UNION 
@@ -148,7 +138,7 @@ func QueryCustomers(c *gin.Context) {
 							UNION ALL SELECT t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
 			) SELECT * FROM CTE1 ) `
 		if name != "" {
-			db.Raw(countSQL+` AND  A.FullName like ?`, user.ID, user.ID, "%"+name+"%").Count(&ct)
+			db.Raw(countSQL+` AND  A.name like ?`, user.ID, user.ID, "%"+name+"%").Count(&ct)
 		} else if citys != "" {
 			//var arr = strings.Split(citys, ",")
 			db.Raw(countSQL+` AND A.city IN ( 
@@ -173,8 +163,8 @@ func QueryCustomers(c *gin.Context) {
 	c.JSON(http.StatusOK, pagination)
 }
 
-// 用户负责区域的客户列表
-func MyCustomers(c *gin.Context) {
+// 用户负责区域的医院列表
+func MyBusinessLogs(c *gin.Context) {
 
 	var pagination Pagination
 	var ct int64
@@ -185,40 +175,33 @@ func MyCustomers(c *gin.Context) {
 
 	user := getUserInf(c)
 
-	var sql = `SELECT A.ID, A.Name,A.ShortName,A.Address,A.Description,C6.name as Province,C7.name as City,
-	C1.Label as CType,C2.label as Status,C3.label as Scale,C4.label as level,C5.label as GetWay  
-	FROM customer A
-	left join code C1 on A.ctype  =  C1.code AND C1.codeType='customerType'
-	left join code C2 on A.status =  C2.code AND C2.codeType='customerStatus'
-	left join code C3 on A.scale  =  C3.code AND C3.codeType='scale'
-	left join code C4 on A.level  =  C4.code AND C4.codeType='customerGrade'
-	left join code C5 on A.getway =  C5.code AND C5.codeType='customerWay'
-	left join city C6 ON A.City   =  C6.code
-	left join city C7 ON C7.code  =  C6.parentId 
-	WHERE A.City IN (
-		WITH RECURSIVE CTE1 as	(  
-						SELECT code FROM marketperson  WHERE employeeId=? UNION 
-						SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
-						UNION ALL SELECT t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
-		) SELECT * FROM CTE1
-     )	ORDER BY ? limit ?,?`
+	sql := `SELECT A.ID, A.Name,C6.name as City,C7.name as Province, 
+    C1.Label as HType,C4.label as Grade 
+    FROM Hospital A
+    left join code C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
+    left join code C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
+    left join city C6 ON A.City   =  C6.code
+    left join city C7 ON C7.code  =  C6.parentId 
+	WHERE A.city IN (
+ 	WITH RECURSIVE CTE1 AS (  
+		SELECT distinct code from city where code IN (
+			SELECT T2.code FROM marketperson T1,MarketProvince T2 where T1.code =T2.areaID AND T1.employeeID=?
+		    UNION
+			SELECT code FROM marketperson  where employeeID=?
+  )UNION ALL   SELECT t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
+	   ) SELECT * FROM CTE1    ) ORDER BY ? limit ?,?`
+
 	var objs []map[string]interface{}
 	err = db.Raw(sql, user.ID, user.ID, sort, offset, size).Find(&objs).Error
 	pagination.Rows = objs
 
-	if err != nil {
-		fmt.Println(err)
-		c.String(http.StatusBadRequest, "错误:%v", err)
-		return
-	}
-
 	if count == 0 {
-		err = db.Raw(` SELECT count(*) FROM customer A where A.city in (WITH RECURSIVE CTE1 as	(  
+		db.Raw(` SELECT count(*) FROM hospital A where A.city in (WITH RECURSIVE CTE1 as	(  
 						SELECT code FROM marketperson  WHERE employeeId=? UNION 
 						SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
 						UNION ALL
 						   select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
-				   ) SELECT * FROM CTE1 )`, user.ID, user.ID).Count(&ct).Error
+				   ) SELECT * FROM CTE1 )`, user.ID, user.ID).Count(&ct)
 
 	}
 	pagination.StartIndex = 0
@@ -227,7 +210,6 @@ func MyCustomers(c *gin.Context) {
 
 	if err != nil {
 		fmt.Println(err)
-		c.String(http.StatusBadRequest, "错误:%v", err)
 		return
 	}
 

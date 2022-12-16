@@ -9,21 +9,16 @@ import (
 	"github.com/gin-gonic/gin" //  go get -u github.com/gin-gonic/gin
 )
 
-type Customer struct {
-	ID          uint   `gorm:"column:ID"`
-	Name        string `gorm:"column:name"`
-	ShortName   string `gorm:"column:shortname"`
-	CType       string `gorm:"column:ctype"`
-	Scale       string `gorm:"column:scale"`
-	Status      string `gorm:"column:status"`
-	Level       string `gorm:"column:level"`
-	GetWay      string `gorm:"column:getway"`
-	City        string `gorm:"column:city"`
-	Address     string `gorm:"column:address"`
-	Description string `gorm:"column:description"`
+type Proxy struct {
+	ID        uint   `gorm:"column:ID"`
+	Name      string `gorm:"column:name"`
+	ShortName string `gorm:"column:shortname"`
+	Status    string `gorm:"column:status"`
+	City      string `gorm:"column:city"`
+	Address   string `gorm:"column:address"`
 }
 
-func AddCustomer(c *gin.Context) {
+func AddProxy(c *gin.Context) {
 	var obj Customer
 	if err := c.BindJSON(&obj); err != nil {
 		fmt.Println("发生错误")
@@ -42,16 +37,16 @@ func AddCustomer(c *gin.Context) {
 }
 
 /***************  单个客户信息  ***********************/
-func fetchCustomer(c *gin.Context) {
+func fetchProxy(c *gin.Context) {
 
-	customerId, err := strconv.Atoi(c.Param("customerId"))
+	proxyId, err := strconv.Atoi(c.Param("proxId"))
 	if err != nil {
 		fmt.Println(err)
 		c.JSON(http.StatusBadRequest, err)
 	}
 
-	var obj Customer
-	err = db.First(&obj, customerId).Error
+	var obj Proxy
+	err = db.First(&obj, proxyId).Error
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -59,18 +54,18 @@ func fetchCustomer(c *gin.Context) {
 }
 
 /***************  更新客户信息  ***********************/
-func UpdateCustomer(c *gin.Context) {
+func UpdateProxy(c *gin.Context) {
 
-	var obj Customer
+	var obj Proxy
 	if err := c.BindJSON(&obj); err != nil {
-		fmt.Println("解析Customer的json发生错误")
+		fmt.Println("解析Proxy的json发生错误")
 		c.String(http.StatusBadRequest, "错误:%v", err)
 		return
 	}
 	fmt.Println(obj)
 
 	if err := db.Model(&obj).Updates(&obj).Error; err != nil {
-		fmt.Println("更新Customer到数据库失败：", err)
+		fmt.Println("更新Proxy到数据库失败：", err)
 		return
 	}
 
@@ -79,7 +74,7 @@ func UpdateCustomer(c *gin.Context) {
 }
 
 /***************************** 查询  *****************************************/
-func QueryCustomers(c *gin.Context) {
+func QueryProxys(c *gin.Context) {
 	var objs []map[string]interface{}
 	var paras map[string]string
 
@@ -91,14 +86,8 @@ func QueryCustomers(c *gin.Context) {
 	citys := paras["Citys"]
 	name := paras["Txt"]
 
-	var sql = `SELECT A.ID, A.Name,A.ShortName,A.Address,A.Description,C6.name as Province,C7.name as City,
-	C1.Label as CType,C2.label as Status,C3.label as Scale,C4.label as level,C5.label as GetWay  
-	FROM customer A
-	left join code C1 on A.ctype  =  C1.code AND C1.codeType='customerType'
-	left join code C2 on A.status =  C2.code AND C2.codeType='customerStatus'
-	left join code C3 on A.scale  =  C3.code AND C3.codeType='scale'
-	left join code C4 on A.level  =  C4.code AND C4.codeType='customerGrade'
-	left join code C5 on A.getway =  C5.code AND C5.codeType='customerWay'
+	var sql = `SELECT A.ID, A.Name,A.ShortName,A.Address,C6.name as City,C7.name as Province  
+	FROM proxy A
 	left join city C6 ON A.City   =  C6.code
 	left join city C7 ON C7.code  =  C6.parentId 
 	WHERE A.City IN (
@@ -140,7 +129,7 @@ func QueryCustomers(c *gin.Context) {
 	pagination.Rows = objs
 
 	if count == 0 {
-		countSQL := ` SELECT count(*) FROM customer A
+		countSQL := ` SELECT count(*) FROM proxy A
 		WHERE A.city IN (
 			WITH RECURSIVE CTE1 as	(  
 							SELECT code FROM marketperson  WHERE employeeId=? UNION 
@@ -174,7 +163,7 @@ func QueryCustomers(c *gin.Context) {
 }
 
 // 用户负责区域的客户列表
-func MyCustomers(c *gin.Context) {
+func MyProxys(c *gin.Context) {
 
 	var pagination Pagination
 	var ct int64
@@ -185,14 +174,8 @@ func MyCustomers(c *gin.Context) {
 
 	user := getUserInf(c)
 
-	var sql = `SELECT A.ID, A.Name,A.ShortName,A.Address,A.Description,C6.name as Province,C7.name as City,
-	C1.Label as CType,C2.label as Status,C3.label as Scale,C4.label as level,C5.label as GetWay  
-	FROM customer A
-	left join code C1 on A.ctype  =  C1.code AND C1.codeType='customerType'
-	left join code C2 on A.status =  C2.code AND C2.codeType='customerStatus'
-	left join code C3 on A.scale  =  C3.code AND C3.codeType='scale'
-	left join code C4 on A.level  =  C4.code AND C4.codeType='customerGrade'
-	left join code C5 on A.getway =  C5.code AND C5.codeType='customerWay'
+	var sql = `SELECT A.ID, A.Name,A.ShortName,A.Address,C6.name as Province,C7.name as City
+	FROM Proxy A
 	left join city C6 ON A.City   =  C6.code
 	left join city C7 ON C7.code  =  C6.parentId 
 	WHERE A.City IN (
@@ -213,7 +196,7 @@ func MyCustomers(c *gin.Context) {
 	}
 
 	if count == 0 {
-		err = db.Raw(` SELECT count(*) FROM customer A where A.city in (WITH RECURSIVE CTE1 as	(  
+		err = db.Raw(` SELECT count(*) FROM proxy A where A.city in (WITH RECURSIVE CTE1 as	(  
 						SELECT code FROM marketperson  WHERE employeeId=? UNION 
 						SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
 						UNION ALL

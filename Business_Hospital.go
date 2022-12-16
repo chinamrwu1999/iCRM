@@ -10,11 +10,12 @@ import (
 )
 
 type Hospital struct {
-	ID    uint   `gorm:"column:ID"`
-	Name  string `gorm:"column:name"`
-	Code  string `gorm:"column:Code"`
-	Grade string `gorm:"column:Grade"`
-	HType string `gorm:"column:htype"`
+	ID        uint   `gorm:"column:ID"`
+	Name      string `gorm:"column:name"`
+	ShortName string `gorm:"column:shortname"`
+	City      string `gorm:"column:Code"`
+	Grade     string `gorm:"column:Grade"`
+	HType     string `gorm:"column:htype"`
 }
 
 func AddHospital(c *gin.Context) {
@@ -88,11 +89,11 @@ func QueryHospitals(c *gin.Context) {
 	var sql = `SELECT A.ID, A.Name,C6.name as City,C7.name as Province,
 	C1.Label as HType,C4.label as Grade
 	FROM Hospital A
-	left join code C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
-	left join code C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
-	left join city C6 ON A.Code   =  C6.code
+	left join code C1 ON A.htype  =  C1.code AND C1.codeType='HospitalType'
+	left join code C4 ON A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
+	left join city C6 ON A.city   =  C6.code
 	left join city C7 ON C7.code  =  C6.parentId 
-	WHERE A.code IN (
+	WHERE A.city IN (
 		WITH RECURSIVE CTE1 as	(  
 						SELECT code FROM marketperson  WHERE employeeId=? UNION 
 						SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
@@ -113,7 +114,7 @@ func QueryHospitals(c *gin.Context) {
 		err = db.Raw(sql, user.ID, user.ID, "%"+name+"%", sort, offset, size).Find(&objs).Error
 	} else if citys != "" { //根据区域查询
 		//var arr = strings.Split(citys, ",")
-		sql += `  AND A.code IN ( 
+		sql += `  AND A.city IN ( 
 			WITH RECURSIVE CTE1 as	(  
 				 SELECT code FROM marketprovince WHERE areaId =? UNION
 				 SELECT ?  
@@ -130,7 +131,7 @@ func QueryHospitals(c *gin.Context) {
 
 	if count == 0 {
 		countSQL := ` SELECT count(*) FROM hospital A
-		WHERE A.code IN (
+		WHERE A.city IN (
 			WITH RECURSIVE CTE1 as	(  
 							SELECT code FROM marketperson  WHERE employeeId=? UNION 
 							SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
@@ -140,7 +141,7 @@ func QueryHospitals(c *gin.Context) {
 			db.Raw(countSQL+` AND  A.name like ?`, user.ID, user.ID, "%"+name+"%").Count(&ct)
 		} else if citys != "" {
 			//var arr = strings.Split(citys, ",")
-			db.Raw(countSQL+` AND A.code IN ( 
+			db.Raw(countSQL+` AND A.city IN ( 
 				WITH RECURSIVE CTE2 as	(  
 					 SELECT code FROM marketprovince WHERE areaId =? UNION
 					 SELECT ?  
@@ -179,9 +180,9 @@ func MyHospitals(c *gin.Context) {
     FROM Hospital A
     left join code C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
     left join code C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
-    left join city C6 ON A.Code   =  C6.code
+    left join city C6 ON A.City   =  C6.code
     left join city C7 ON C7.code  =  C6.parentId 
-	WHERE A.code IN (
+	WHERE A.city IN (
  	WITH RECURSIVE CTE1 AS (  
 		SELECT distinct code from city where code IN (
 			SELECT T2.code FROM marketperson T1,MarketProvince T2 where T1.code =T2.areaID AND T1.employeeID=?
@@ -195,7 +196,7 @@ func MyHospitals(c *gin.Context) {
 	pagination.Rows = objs
 
 	if count == 0 {
-		db.Raw(` SELECT count(*) FROM hospital A where A.code in (WITH RECURSIVE CTE1 as	(  
+		db.Raw(` SELECT count(*) FROM hospital A where A.city in (WITH RECURSIVE CTE1 as	(  
 						SELECT code FROM marketperson  WHERE employeeId=? UNION 
 						SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
 						UNION ALL
