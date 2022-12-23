@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin" //  go get -u github.com/gin-gonic/gin
 )
@@ -39,170 +40,104 @@ func AddLogs(c *gin.Context) {
 /***************  单个客户信息  ***********************/
 func fetchLog(c *gin.Context) {
 
-	hospitalId, err := strconv.Atoi(c.Param("hospitalId"))
+	logId, err := strconv.Atoi(c.Param("logId"))
 	if err != nil {
 		fmt.Println(err)
 		c.JSON(http.StatusBadRequest, err)
 	}
 
-	var obj Hospital
-	err = db.First(&obj, hospitalId).Error
+	var obj BusinessLog
+	err = db.First(&obj, logId).Error
 	if err != nil {
 		fmt.Println(err)
 	}
 	c.JSON(http.StatusOK, obj)
 }
 
-/***************  更新客户信息  ***********************/
-func UpdateLog(c *gin.Context) {
-
-	var obj Hospital
-	if err := c.BindJSON(&obj); err != nil {
-		fmt.Println("更新医院信息：解析Hospital的json发生错误")
-		c.String(http.StatusBadRequest, "错误:%v", err)
-		return
-	}
-	fmt.Println(obj)
-
-	if err := db.Model(&obj).Updates(&obj).Error; err != nil {
-		fmt.Println("更新Hospital到数据库失败：", err)
-		return
-	}
-
-	fmt.Println(obj)
-	c.JSON(http.StatusOK, obj)
-}
-
 /***************************** 查询  *****************************************/
-func QueryLogs(c *gin.Context) {
+func QueryEmployeeLogs(c *gin.Context) {
 	var objs []map[string]interface{}
 	var paras map[string]string
 
 	if err := c.BindJSON(&paras); err != nil {
-		fmt.Println("查询医院：解析参数发生错误")
+		fmt.Println("查询销售工作日志：解析参数发生错误")
 		c.String(http.StatusBadRequest, "错误:%v", err)
 		return
 	}
-	citys := paras["Citys"]
-	name := paras["Txt"]
+	EmployeeId, _ := strconv.Atoi(paras["employeeId"])
+	HospitalId, _ := strconv.Atoi(paras["hospitalId"])
+	CustomerId, _ := strconv.Atoi(paras["customerId"])
+	ProxyId, _ := strconv.Atoi(paras["proxyId"])
+	strBeginDate := paras["beginDate"]
+	strEndDate := paras["endDate"]
 
-	var sql = `SELECT A.ID, A.Name,C6.name as City,C7.name as Province,
-	C1.Label as HType,C4.label as Grade
-	FROM Hospital A
-	left join code C1 ON A.htype  =  C1.code AND C1.codeType='HospitalType'
-	left join code C4 ON A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
-	left join city C6 ON A.city   =  C6.code
-	left join city C7 ON C7.code  =  C6.parentId 
-	WHERE A.city IN (
-		WITH RECURSIVE CTE1 as	(  
-						SELECT code FROM marketperson  WHERE employeeId=? UNION 
-						SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
-						UNION ALL SELECT t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
-		) SELECT * FROM CTE1
-     )
+	var sql = `select A.ID,E.Name,H.Name as hospitalName,C.Name as customerName,P.Name as proxyName,content,DATE_FORMAT(workingDate,"%Y-%m-%d") as wdate
+	from businesslog A
+	left join Hospital H ON A.hospitalId=H.ID
+	left join customer C ON A.customerId=C.ID
+	left join proxy P ON A.proxyID=P.ID
+	left join employee E ON A.employeeId=E.ID
+	WHERE A.employeeID=? 
+	AND workingDate >= ? AND workingDate <= ?
+	ORDER BY ? limit ?,?
 	`
-	user := getUserInf(c)
+
+	var countSql = `SELECT count(*)  
+			FROM businesslog A
+			LEFT JOIN Hospital H ON A.hospitalId=H.ID
+			LEFT JOIN customer C ON A.customerId=C.ID
+			LEFT JOIN proxy P ON A.proxyID=P.ID
+			LEFT JOIN employee E ON A.employeeId=E.ID	
+			WHERE A.employeeId= ? AND workingDate >= ? AND workingDate <= ?
+		`
+
+	frmTime := time.Now().AddDate(0, 0, -30)
+	endTime := time.Now()
+
+	if strBeginDate != "" {
+		frmTime, err = time.Parse("YYYY-MM-dd", strBeginDate)
+
+		//countSql += "AND workingDate >= ? "
+	}
+
+	if strEndDate != "" {
+		endTime, err = time.Parse("YYYY-MM-dd", strBeginDate)
+		//countSql += "AND workingDate <= ? "
+	}
+
 	var pagination Pagination
 	var ct int64
 	size, offset, count, sort := PaginationInf(c)
 	//fmt.Printf("offset=%d\n", offset)
 	pagination.PageSize = size
 	pagination.StartIndex = offset
-	var err error
-	if name != "" { // 模糊查询
-		sql += "AND A.name like ? ORDER BY ? limit ?,?"
-		err = db.Raw(sql, user.ID, user.ID, "%"+name+"%", sort, offset, size).Find(&objs).Error
-	} else if citys != "" { //根据区域查询
-		//var arr = strings.Split(citys, ",")
-		sql += `  AND A.city IN ( 
-			WITH RECURSIVE CTE1 as	(  
-				 SELECT code FROM marketprovince WHERE areaId =? UNION
-				 SELECT ?  
-				 UNION ALL
-					select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
-			) SELECT * FROM CTE1
-			)  ORDER BY ? limit ?,?`
-		err = db.Raw(sql, user.ID, user.ID, citys, citys, sort, offset, size).Find(&objs).Error
-	} else { //列出所有
-		sql += " ORDER BY ? limit ?,?"
-		err = db.Raw(sql, user.ID, user.ID, sort, offset, size).Find(&objs).Error
+
+	DB := db.Raw(sql, EmployeeId, frmTime, endTime, sort, offset, size) //.Find(&objs).Error
+	DB1 := db.Raw(countSql, EmployeeId, frmTime, endTime)
+
+	if HospitalId != 0 {
+		//sql += " AND A.hospitalId=? "
+		DB.Where("A.hospitalId=?", HospitalId)
+		DB1.Where("A.hospitalId=?", HospitalId)
 	}
+	if CustomerId != 0 {
+		//sql += " AND A.customerId=? "
+		DB.Where("A.customerId=?", CustomerId)
+		DB1.Where("A.customerId=?", CustomerId)
+	}
+	if ProxyId != 0 {
+		sql += " AND A.proxyId=? "
+		DB.Where("A.proxyId=?", ProxyId)
+		DB1.Where("A.proxyId=?", ProxyId)
+	}
+
+	err = DB.Find(&objs).Error
+
 	pagination.Rows = objs
 
 	if count == 0 {
-		countSQL := ` SELECT count(*) FROM hospital A
-		WHERE A.city IN (
-			WITH RECURSIVE CTE1 as	(  
-							SELECT code FROM marketperson  WHERE employeeId=? UNION 
-							SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
-							UNION ALL SELECT t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
-			) SELECT * FROM CTE1 ) `
-		if name != "" {
-			db.Raw(countSQL+` AND  A.name like ?`, user.ID, user.ID, "%"+name+"%").Count(&ct)
-		} else if citys != "" {
-			//var arr = strings.Split(citys, ",")
-			db.Raw(countSQL+` AND A.city IN ( 
-				WITH RECURSIVE CTE2 as	(  
-					 SELECT code FROM marketprovince WHERE areaId =? UNION
-					 SELECT ?  
-					 UNION ALL
-						select t1.code from city t1 inner join CTE2 t2  on t1.parentID = t2.code
-				) SELECT * FROM CTE2) `, user.ID, user.ID, citys, citys).Count(&ct)
-		} else {
-			db.Raw(countSQL).Count(&ct)
-		}
-		pagination.StartIndex = 0
-		pagination.TotalRows = ct
-		pagination.TotalPages = int(math.Ceil(float64(ct) / float64(pagination.PageSize)))
-	}
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	c.JSON(http.StatusOK, pagination)
-}
-
-// 用户负责区域的医院列表
-func MyBusinessLogs(c *gin.Context) {
-
-	var pagination Pagination
-	var ct int64
-	size, offset, count, sort := PaginationInf(c)
-	pagination.PageSize = size
-	pagination.StartIndex = offset
-	//var err error
-
-	user := getUserInf(c)
-
-	sql := `SELECT A.ID, A.Name,C6.name as City,C7.name as Province, 
-    C1.Label as HType,C4.label as Grade 
-    FROM Hospital A
-    left join code C1 on A.htype  =  C1.code AND C1.codeType='HospitalType'
-    left join code C4 on A.Grade  =  C4.code AND C4.codeType='HospitalGrade'
-    left join city C6 ON A.City   =  C6.code
-    left join city C7 ON C7.code  =  C6.parentId 
-	WHERE A.city IN (
- 	WITH RECURSIVE CTE1 AS (  
-		SELECT distinct code from city where code IN (
-			SELECT T2.code FROM marketperson T1,MarketProvince T2 where T1.code =T2.areaID AND T1.employeeID=?
-		    UNION
-			SELECT code FROM marketperson  where employeeID=?
-  )UNION ALL   SELECT t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
-	   ) SELECT * FROM CTE1    ) ORDER BY ? limit ?,?`
-
-	var objs []map[string]interface{}
-	err = db.Raw(sql, user.ID, user.ID, sort, offset, size).Find(&objs).Error
-	pagination.Rows = objs
-
-	if count == 0 {
-		db.Raw(` SELECT count(*) FROM hospital A where A.city in (WITH RECURSIVE CTE1 as	(  
-						SELECT code FROM marketperson  WHERE employeeId=? UNION 
-						SELECT code FROM marketprovince WHERE areaId IN (SELECT code FROM marketperson WHERE employeeId=? )    
-						UNION ALL
-						   select t1.code from city t1 inner join CTE1 t2  on t1.parentID = t2.code
-				   ) SELECT * FROM CTE1 )`, user.ID, user.ID).Count(&ct)
-
+		DB1.Count((&ct))
+		fmt.Print(ct)
 	}
 	pagination.StartIndex = 0
 	pagination.TotalRows = ct
@@ -214,5 +149,105 @@ func MyBusinessLogs(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, pagination)
+}
 
+func QueryLogs(c *gin.Context) {
+	var objs []map[string]interface{}
+	var paras map[string]string
+
+	if err := c.BindJSON(&paras); err != nil {
+		fmt.Println("查询销售工作日志：解析参数发生错误")
+		c.String(http.StatusBadRequest, "错误:%v", err)
+		return
+	}
+	id := paras["id"]
+	intId, _ := strconv.Atoi(id)
+	targetId, _ := paras["target"]
+	strBeginDate := paras["date1"]
+	strEndDate := paras["date2"]
+
+	// fmt.Print("===>id=" + id + "target=" + targetId + ",date1=" + strBeginDate + ",date2=" + strEndDate + "   <<<\n")
+
+	var sql = `select A.ID,E.Name,H.Name as hospitalName,C.Name as customerName,P.Name as proxyName,content,DATE_FORMAT(workingDate,"%Y-%m-%d") as wdate
+	from businesslog A
+	left join Hospital H ON A.hospitalId=H.ID
+	left join customer C ON A.customerId=C.ID
+	left join proxy P ON A.proxyID=P.ID
+	left join employee E ON A.employeeId=E.ID
+	WHERE  workingDate >= ? AND workingDate <= ?
+	AND A.employeeId in 
+	`
+	var countSql = `SELECT count(*)  
+			FROM businesslog A
+			LEFT JOIN Hospital H ON A.hospitalId=H.ID
+			LEFT JOIN customer C ON A.customerId=C.ID
+			LEFT JOIN proxy P ON A.proxyID=P.ID
+			LEFT JOIN employee E ON A.employeeId=E.ID	
+			WHERE  workingDate >= ? AND workingDate <= ?
+		`
+
+	frmTime := time.Now().AddDate(0, 0, -10)
+	endTime := time.Now()
+
+	if strBeginDate != "" {
+		// fmt.Println(strBeginDate)
+		frmTime, err = time.Parse("2006-01-02 15:04", strBeginDate+" 00:01")
+
+		//countSql += "AND workingDate >= ? "
+	}
+
+	if strEndDate != "" {
+		// fmt.Println(strEndDate)
+		endTime, err = time.Parse("2006-01-02 15:04", strEndDate+" 11:59")
+
+		//countSql += "AND workingDate <= ? "
+	}
+
+	var pagination Pagination
+	var ct int64
+	size, offset, count, _ := PaginationInf(c)
+	//fmt.Printf("offset=%d\n", offset)
+	pagination.PageSize = size
+	pagination.StartIndex = offset
+
+	// DB := db.Raw(sql, frmTime, endTime, offset, size) //.Find(&objs).Error
+	// DB1 := db.Raw(countSql, frmTime, endTime)
+
+	if targetId == "employeeId" {
+		fmt.Println("target=" + targetId + " id=" + id)
+		sql += " AND A.employeeId=?  ORDER By workingDate desc limit ?,?"
+		countSql += fmt.Sprintf(" AND A.employeeId='%s'", id)
+		err = db.Raw(sql, frmTime, endTime, id, offset, size).Find(&objs).Error
+
+	} else if targetId == "hospitalId" {
+		fmt.Println("target=" + targetId + " id=" + id)
+		sql += " AND A.hospitalId=?  ORDER By workingDate desc limit ?,?"
+		countSql += fmt.Sprintf(" AND A.hospitalId=%d", intId)
+		err = db.Raw(sql, frmTime, endTime, intId, offset, size).Find(&objs).Error
+
+	} else if targetId == "proxyId" {
+		fmt.Println("target=" + targetId + " id=" + id)
+		sql += " AND A.proxyId=? ORDER By workingDate desc limit ?,?"
+		countSql += fmt.Sprintf(" AND A.proxyId=%d", intId)
+		err = db.Raw(sql, frmTime, endTime, intId, offset, size).Find(&objs).Error
+	} else {
+
+	}
+
+	pagination.Rows = objs
+
+	if count == 0 {
+		db.Raw(countSql, frmTime, endTime).Count((&ct))
+		fmt.Print(ct)
+
+		pagination.StartIndex = 0
+		pagination.TotalRows = ct
+		pagination.TotalPages = int(math.Ceil(float64(ct) / float64(pagination.PageSize)))
+	}
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, pagination)
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 )
 
@@ -24,7 +25,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	gob.Register(Employee{})
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		//Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Info),
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,                              // use singular table name, table for `User` would be `user` with this option enabled
 			NoLowerCase:   true,                              // skip the snake_casing of names
@@ -46,6 +47,8 @@ func main() {
 	router.POST("/login", UserLogin)
 	router.POST("/goal/add", saveGoal)
 
+	router.POST("/salesperson", SalesPersonByCity)
+
 	router.GET("/codes/:type", getCodes)
 	router.GET("/products", allProducts)
 	router.GET("/provinces", fetchProvines)
@@ -57,29 +60,27 @@ func main() {
 	router.GET("/market/provinces/:areaId", ListMarketProvinces)
 	router.GET("/market/citys/:provinceId", ListMarketCitys)
 
-	router.GET("/hospital/:hospitalId", fetchHospital) // handlerCustomer)
-	router.POST("/hospitals/list", QueryHospitals)     // handlerCustomer)
+	router.GET("/hospital/:hospitalId", fetchHospital) //
+	router.POST("/hospitals/list", QueryHospitals)     //
 	router.POST("/hospital/add", AddHospital)
 	router.POST("/hospital/update", UpdateHospital)
 	router.GET("/myHospitals", MyHospitals)
 
 	router.GET("/customer/:customerId", fetchCustomer) // handlerCustomer)
-	router.POST("/customers/list", QueryCustomers)     // handlerCustomer)
+	router.POST("/customers/list", QueryCustomers)     //
 	router.POST("/customer/add", AddCustomer)
 	router.POST("/customer/update", UpdateCustomer)
 	router.GET("/myCustomers", MyCustomers)
 
-	router.GET("/proxy/:customerId", fetchProxy) // handlerCustomer)
-	router.POST("/proxys/list", QueryProxys)     // handlerCustomer)
+	router.GET("/proxy/:customerId", fetchProxy) //
+	router.POST("/proxys/list", QueryProxys)     //
 	router.POST("/proxy/add", AddProxy)
 	router.POST("/proxy/update", UpdateCustomer)
 	router.GET("/myProxys", MyProxys)
 
-	router.GET("/Blogs/:logId", fetchProxy) // handlerCustomer)
-	router.POST("/Blogs/list", QueryProxys) // handlerCustomer)
+	router.POST("/EmployeeLogs", QueryEmployeeLogs) //
+	router.POST("/QueryLogs", QueryLogs)            //
 	router.POST("/Blogs/add", AddLogs)
-	router.POST("/Blogs/update", UpdateCustomer)
-	router.GET("/myBlogs", MyProxys)
 
 	router.POST("/estimate/save", AddEstimate)
 	router.POST("estimate/history", HistoryEstimate)
